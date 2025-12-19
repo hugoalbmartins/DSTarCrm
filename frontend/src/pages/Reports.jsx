@@ -47,6 +47,7 @@ export default function Reports() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [sellers, setSellers] = useState([]);
+  const [partners, setPartners] = useState([]);
   
   // Filters
   const [startDate, setStartDate] = useState(null);
@@ -54,18 +55,23 @@ export default function Reports() {
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [sellerId, setSellerId] = useState("");
+  const [partnerId, setPartnerId] = useState("");
 
   useEffect(() => {
-    fetchSellers();
+    fetchFiltersData();
   }, [token]);
 
-  const fetchSellers = async () => {
+  const fetchFiltersData = async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API}/users`, { headers });
-      setSellers(response.data.filter(u => u.role === "vendedor"));
+      const [usersRes, partnersRes] = await Promise.all([
+        axios.get(`${API}/users`, { headers }),
+        axios.get(`${API}/partners`, { headers })
+      ]);
+      setSellers(usersRes.data.filter(u => u.role === "vendedor"));
+      setPartners(partnersRes.data);
     } catch (error) {
-      console.error("Error fetching sellers:", error);
+      console.error("Error fetching filters data:", error);
     }
   };
 
@@ -80,6 +86,7 @@ export default function Reports() {
       if (category && category !== "all") params.append("category", category);
       if (status && status !== "all") params.append("status", status);
       if (sellerId && sellerId !== "all") params.append("seller_id", sellerId);
+      if (partnerId && partnerId !== "all") params.append("partner_id", partnerId);
 
       const response = await axios.get(`${API}/reports/sales?${params.toString()}`, { headers });
       setReport(response.data);
@@ -106,7 +113,7 @@ export default function Reports() {
       sale.client_nif || "",
       CATEGORY_MAP[sale.category] || sale.category,
       sale.sale_type || "",
-      sale.partner,
+      sale.partner_name || "",
       sale.contract_value,
       sale.commission || "",
       STATUS_MAP[sale.status]?.label || sale.status,
@@ -145,7 +152,7 @@ export default function Reports() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Start Date */}
             <Popover>
               <PopoverTrigger asChild>
@@ -217,6 +224,21 @@ export default function Reports() {
                 {Object.entries(STATUS_MAP).map(([key, s]) => (
                   <SelectItem key={key} value={key} className="text-white hover:bg-white/10">
                     {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Partner */}
+            <Select value={partnerId} onValueChange={setPartnerId}>
+              <SelectTrigger className="form-input" data-testid="report-partner-filter">
+                <SelectValue placeholder="Parceiro" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#082d32] border-white/10">
+                <SelectItem value="all" className="text-white hover:bg-white/10">Todos</SelectItem>
+                {partners.map((partner) => (
+                  <SelectItem key={partner.id} value={partner.id} className="text-white hover:bg-white/10">
+                    {partner.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -333,7 +355,7 @@ export default function Reports() {
                             </div>
                           </td>
                           <td className="text-white/80">{CATEGORY_MAP[sale.category]}</td>
-                          <td className="text-white/80">{sale.partner}</td>
+                          <td className="text-white/80">{sale.partner_name}</td>
                           <td className="font-mono text-[#c8f31d]">
                             {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(sale.contract_value)}
                           </td>
