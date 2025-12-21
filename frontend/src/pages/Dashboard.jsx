@@ -14,7 +14,9 @@ import {
   Zap,
   Phone,
   Sun,
-  Calendar
+  Calendar,
+  Clock,
+  CheckCircle
 } from "lucide-react";
 import {
   BarChart,
@@ -96,16 +98,13 @@ export default function Dashboard() {
       value
     })) : [];
 
-  const statusData = metrics?.sales_by_status ?
-    Object.entries(metrics.sales_by_status).map(([key, value]) => ({
-      status: STATUS_MAP[key]?.label || key,
-      count: value,
-      color: STATUS_MAP[key]?.color
-    })) : [];
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value || 0);
+  };
 
   return (
     <div className="space-y-6" data-testid="dashboard">
-      {/* Metrics Grid */}
+      {/* Metrics Grid - Row 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="metric-card" data-testid="metric-total-sales">
           <CardContent className="p-0">
@@ -131,30 +130,71 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="metric-card" data-testid="metric-contract-value">
+        <Card className="metric-card" data-testid="metric-mensalidades">
           <CardContent className="p-0">
             <div className="flex items-start justify-between">
               <div>
-                <p className="metric-value font-mono">
-                  {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(metrics?.total_contract_value || 0)}
+                <p className="metric-value font-mono text-2xl">
+                  {formatCurrency(metrics?.total_mensalidades)}
                 </p>
-                <p className="metric-label">Valor Contratos Ativos</p>
+                <p className="metric-label">Mensalidades Telecom</p>
+              </div>
+              <Phone className="text-[#c8f31d] opacity-50" size={24} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="metric-card" data-testid="metric-total-commission">
+          <CardContent className="p-0">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="metric-value font-mono text-2xl">
+                  {formatCurrency(metrics?.total_commission)}
+                </p>
+                <p className="metric-label">Total Comissões</p>
               </div>
               <Euro className="text-[#c8f31d] opacity-50" size={24} />
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        <Card className="metric-card" data-testid="metric-commission">
+      {/* Metrics Grid - Row 2: Comissões Previstas e Ativas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="metric-card border-l-4 border-l-yellow-500" data-testid="metric-comissoes-previstas">
           <CardContent className="p-0">
             <div className="flex items-start justify-between">
               <div>
-                <p className="metric-value font-mono">
-                  {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(metrics?.total_commission || 0)}
+                <p className="metric-value font-mono text-2xl text-yellow-400">
+                  {formatCurrency(metrics?.comissoes_previstas)}
                 </p>
-                <p className="metric-label">Total Comissões</p>
+                <p className="metric-label flex items-center gap-2">
+                  <Clock size={14} className="text-yellow-400" />
+                  Comissões Previstas (Pendentes)
+                </p>
               </div>
-              <Euro className="text-green-400 opacity-50" size={24} />
+              <div className="bg-yellow-500/20 p-2 rounded-full">
+                <Clock className="text-yellow-400" size={24} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="metric-card border-l-4 border-l-green-500" data-testid="metric-comissoes-ativas">
+          <CardContent className="p-0">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="metric-value font-mono text-2xl text-green-400">
+                  {formatCurrency(metrics?.comissoes_ativas)}
+                </p>
+                <p className="metric-label flex items-center gap-2">
+                  <CheckCircle size={14} className="text-green-400" />
+                  Comissões Ativas
+                </p>
+              </div>
+              <div className="bg-green-500/20 p-2 rounded-full">
+                <CheckCircle className="text-green-400" size={24} />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -309,7 +349,7 @@ export default function Dashboard() {
                           <CategoryIcon className="text-[#c8f31d] mt-0.5" size={18} />
                           <div>
                             <p className="text-white font-medium">{alert.client_name}</p>
-                            <p className="text-white/50 text-sm">{alert.partner}</p>
+                            <p className="text-white/50 text-sm">{alert.partner_name}</p>
                           </div>
                         </div>
                         <div className="text-right">
