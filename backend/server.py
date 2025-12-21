@@ -569,6 +569,33 @@ async def get_dashboard_metrics(current_user: dict = Depends(get_current_user)):
     commission_result = await db.sales.aggregate(pipeline_commission).to_list(1)
     total_commission = commission_result[0]["total"] if commission_result else 0
     
+    # Total mensalidades contratadas (telecomunicações apenas)
+    telecom_query = {**query, "category": SaleCategory.TELECOMUNICACOES}
+    pipeline_mensalidades = [
+        {"$match": telecom_query},
+        {"$group": {"_id": None, "total": {"$sum": "$contract_value"}}}
+    ]
+    mensalidades_result = await db.sales.aggregate(pipeline_mensalidades).to_list(1)
+    total_mensalidades = mensalidades_result[0]["total"] if mensalidades_result else 0
+    
+    # Comissões previstas (vendas em estado pendente)
+    pendente_query = {**query, "status": SaleStatus.PENDENTE, "commission": {"$ne": None}}
+    pipeline_previstas = [
+        {"$match": pendente_query},
+        {"$group": {"_id": None, "total": {"$sum": "$commission"}}}
+    ]
+    previstas_result = await db.sales.aggregate(pipeline_previstas).to_list(1)
+    comissoes_previstas = previstas_result[0]["total"] if previstas_result else 0
+    
+    # Comissões ativas (vendas em estado ativo)
+    ativo_query = {**query, "status": SaleStatus.ATIVO, "commission": {"$ne": None}}
+    pipeline_ativas = [
+        {"$match": ativo_query},
+        {"$group": {"_id": None, "total": {"$sum": "$commission"}}}
+    ]
+    ativas_result = await db.sales.aggregate(pipeline_ativas).to_list(1)
+    comissoes_ativas = ativas_result[0]["total"] if ativas_result else 0
+    
     now = datetime.now(timezone.utc)
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_query = {**query, "created_at": {"$gte": start_of_month.isoformat()}}
@@ -580,6 +607,9 @@ async def get_dashboard_metrics(current_user: dict = Depends(get_current_user)):
         "sales_by_category": category_dict,
         "total_contract_value": total_value,
         "total_commission": total_commission,
+        "total_mensalidades": total_mensalidades,
+        "comissoes_previstas": comissoes_previstas,
+        "comissoes_ativas": comissoes_ativas,
         "sales_this_month": sales_this_month
     }
 
