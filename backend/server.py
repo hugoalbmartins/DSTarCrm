@@ -150,12 +150,13 @@ class SaleBase(BaseModel):
 class SaleCreate(SaleBase):
     pass
 
-# Limited update - only status, date, notes, REQ (telecom)
+# Limited update - only status, date, notes, REQ (telecom), commission
 class SaleUpdate(BaseModel):
     status: Optional[SaleStatus] = None
     active_date: Optional[str] = None  # ISO date string
     notes: Optional[str] = None
     req: Optional[str] = None  # Only for telecom
+    commission: Optional[float] = None  # Can be edited by Admin/BO
 
 class Sale(SaleBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -461,6 +462,14 @@ async def update_sale(sale_id: str, update_data: SaleUpdate, current_user: dict 
     # REQ field only allowed for telecom
     if "req" in update_dict and sale.get("category") != SaleCategory.TELECOMUNICACOES:
         del update_dict["req"]
+    
+    # Commission can only be edited by Admin/BO
+    if "commission" in update_dict:
+        if current_user["role"] not in [UserRole.ADMIN, UserRole.BACKOFFICE]:
+            del update_dict["commission"]
+        else:
+            update_dict["commission_assigned_by"] = current_user["name"]
+            update_dict["commission_assigned_at"] = datetime.now(timezone.utc).isoformat()
     
     # Handle active_date parsing
     if "active_date" in update_dict and update_dict["active_date"]:
