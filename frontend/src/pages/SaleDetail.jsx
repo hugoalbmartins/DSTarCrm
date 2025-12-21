@@ -21,13 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -90,15 +83,13 @@ export default function SaleDetail({ editMode = false }) {
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [commissionModal, setCommissionModal] = useState(false);
-  const [commission, setCommission] = useState("");
-  const [savingCommission, setSavingCommission] = useState(false);
   
   // Edit fields (limited)
   const [editStatus, setEditStatus] = useState("");
   const [editActiveDate, setEditActiveDate] = useState(null);
   const [editNotes, setEditNotes] = useState("");
   const [editReq, setEditReq] = useState("");
+  const [editCommission, setEditCommission] = useState("");
   const [isEditing, setIsEditing] = useState(editMode);
 
   useEffect(() => {
@@ -111,7 +102,7 @@ export default function SaleDetail({ editMode = false }) {
       const response = await axios.get(`${API}/sales/${id}`, { headers });
       const saleData = response.data;
       setSale(saleData);
-      setCommission(saleData.commission?.toString() || "");
+      setEditCommission(saleData.commission?.toString() || "");
       setEditStatus(saleData.status || "");
       setEditNotes(saleData.notes || "");
       setEditReq(saleData.req || "");
@@ -137,6 +128,14 @@ export default function SaleDetail({ editMode = false }) {
         req: sale.category === "telecomunicacoes" ? editReq : null
       };
       
+      // Include commission if user is Admin/BO and value changed
+      if (isAdminOrBackoffice && editCommission) {
+        const commissionValue = parseFloat(editCommission);
+        if (!isNaN(commissionValue)) {
+          payload.commission = commissionValue;
+        }
+      }
+      
       const response = await axios.put(`${API}/sales/${id}`, payload, { headers });
       setSale(response.data);
       setIsEditing(false);
@@ -145,30 +144,6 @@ export default function SaleDetail({ editMode = false }) {
       toast.error("Erro ao atualizar venda");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleSaveCommission = async () => {
-    if (!commission || isNaN(parseFloat(commission))) {
-      toast.error("Insira um valor válido");
-      return;
-    }
-
-    setSavingCommission(true);
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.put(
-        `${API}/sales/${id}/commission`,
-        { commission: parseFloat(commission) },
-        { headers }
-      );
-      setSale(response.data);
-      setCommissionModal(false);
-      toast.success("Comissão atribuída com sucesso");
-    } catch (error) {
-      toast.error("Erro ao atribuir comissão");
-    } finally {
-      setSavingCommission(false);
     }
   };
 
@@ -198,6 +173,10 @@ export default function SaleDetail({ editMode = false }) {
 
   const isTelecom = sale.category === "telecomunicacoes";
   const isEnergy = sale.category === "energia";
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value || 0);
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6" data-testid="sale-detail-page">
@@ -327,7 +306,7 @@ export default function SaleDetail({ editMode = false }) {
 
               {/* REQ field only for telecom */}
               {isTelecom && (
-                <div className="md:col-span-2">
+                <div>
                   <Label className="form-label">REQ (Telecomunicações)</Label>
                   <Input
                     value={editReq}
@@ -335,6 +314,26 @@ export default function SaleDetail({ editMode = false }) {
                     className="form-input"
                     placeholder="Número de requisição"
                     data-testid="edit-req-input"
+                  />
+                </div>
+              )}
+
+              {/* Commission - editable by Admin/BO */}
+              {isAdminOrBackoffice && (
+                <div>
+                  <Label className="form-label flex items-center gap-2">
+                    <Euro size={14} className="text-[#c8f31d]" />
+                    Comissão (€)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editCommission}
+                    onChange={(e) => setEditCommission(e.target.value)}
+                    className="form-input"
+                    placeholder="0.00"
+                    data-testid="edit-commission-input"
                   />
                 </div>
               )}
@@ -395,7 +394,7 @@ export default function SaleDetail({ editMode = false }) {
           </CardContent>
         </Card>
 
-        {/* Contract Value & Commission */}
+        {/* Values & Commission */}
         <Card className="card-leiritrix">
           <CardHeader className="border-b border-white/5 pb-4">
             <CardTitle className="text-white font-['Manrope'] text-lg flex items-center gap-2">
@@ -404,18 +403,22 @@ export default function SaleDetail({ editMode = false }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
-            <div>
-              <p className="text-white/50 text-sm mb-1">Valor do Contrato</p>
-              <p className="text-2xl font-bold text-[#c8f31d] font-mono">
-                {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(sale.contract_value)}
-              </p>
-            </div>
+            {/* Mensalidade - apenas para Telecomunicações */}
+            {isTelecom && (
+              <div>
+                <p className="text-white/50 text-sm mb-1">Mensalidade Contratada</p>
+                <p className="text-2xl font-bold text-[#c8f31d] font-mono">
+                  {formatCurrency(sale.contract_value)}
+                </p>
+              </div>
+            )}
+            
             <div>
               <p className="text-white/50 text-sm mb-1">Comissão</p>
               {sale.commission !== null && sale.commission !== undefined ? (
                 <div>
                   <p className="text-2xl font-bold text-green-400 font-mono">
-                    {new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(sale.commission)}
+                    {formatCurrency(sale.commission)}
                   </p>
                   {sale.commission_assigned_by && (
                     <p className="text-white/40 text-xs mt-1">
@@ -424,18 +427,7 @@ export default function SaleDetail({ editMode = false }) {
                   )}
                 </div>
               ) : (
-                <div>
-                  <p className="text-white/30 mb-2">Não atribuída</p>
-                  {isAdminOrBackoffice && (
-                    <Button
-                      onClick={() => setCommissionModal(true)}
-                      className="btn-primary btn-primary-glow text-xs"
-                      data-testid="assign-commission-btn"
-                    >
-                      Atribuir Comissão
-                    </Button>
-                  )}
-                </div>
+                <p className="text-white/30">Não atribuída</p>
               )}
             </div>
           </CardContent>
@@ -555,48 +547,6 @@ export default function SaleDetail({ editMode = false }) {
           )}
         </CardContent>
       </Card>
-
-      {/* Commission Modal */}
-      <Dialog open={commissionModal} onOpenChange={setCommissionModal}>
-        <DialogContent className="bg-[#082d32] border-white/10">
-          <DialogHeader>
-            <DialogTitle className="text-white font-['Manrope']">Atribuir Comissão</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="commission" className="form-label">
-              Valor da Comissão (€)
-            </Label>
-            <Input
-              id="commission"
-              type="number"
-              step="0.01"
-              min="0"
-              value={commission}
-              onChange={(e) => setCommission(e.target.value)}
-              className="form-input mt-2"
-              placeholder="0.00"
-              data-testid="commission-input"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setCommissionModal(false)}
-              className="btn-secondary"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSaveCommission}
-              disabled={savingCommission}
-              className="btn-primary btn-primary-glow"
-              data-testid="save-commission-btn"
-            >
-              {savingCommission ? "A guardar..." : "Guardar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
