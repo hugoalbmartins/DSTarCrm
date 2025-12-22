@@ -253,19 +253,49 @@ async def require_admin(user: dict = Depends(get_current_user)):
     return user
 
 # Auth endpoints
-@api_router.post("/auth/register", response_model=UserResponse)
+@api_router.post("/auth/register")
 async def register_user(user_data: UserCreate, current_user: dict = Depends(require_admin)):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email já registado")
     
+    # Generate password if not provided
+    generated_password = None
+    if user_data.password:
+        if not validate_password(user_data.password):
+            raise HTTPException(
+                status_code=400, 
+                detail="Password inválida: mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 dígito e 1 caracter especial"
+            )
+        password_to_use = user_data.password
+        must_change = False
+    else:
+        generated_password = generate_password()
+        password_to_use = generated_password
+        must_change = True
+    
     user = User(**user_data.model_dump(exclude={"password"}))
     user_dict = user.model_dump()
-    user_dict["password_hash"] = hash_password(user_data.password)
+    user_dict["password_hash"] = hash_password(password_to_use)
     user_dict["created_at"] = user_dict["created_at"].isoformat()
+    user_dict["must_change_password"] = must_change
     
     await db.users.insert_one(user_dict)
-    return UserResponse(**user_dict)
+    
+    response_data = {
+        "id": user_dict["id"],
+        "email": user_dict["email"],
+        "name": user_dict["name"],
+        "role": user_dict["role"],
+        "active": user_dict["active"],
+        "must_change_password": user_dict["must_change_password"]
+    }
+    
+    # Include generated password in response so admin can share it
+    if generated_password:
+        response_data["generated_password"] = generated_password
+    
+    return response_data
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
