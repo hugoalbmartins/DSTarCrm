@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useAuth, API } from "@/App";
+import { useAuth } from "@/App";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import { salesService } from "@/services/salesService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,15 +76,14 @@ const STATUSES = [
 ];
 
 export default function SaleDetail({ editMode = false }) {
-  const { token, isAdminOrBackoffice } = useAuth();
+  const { user, isAdminOrBackoffice } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [sale, setSale] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  // Edit fields (limited)
+
   const [editStatus, setEditStatus] = useState("");
   const [editActiveDate, setEditActiveDate] = useState(null);
   const [editNotes, setEditNotes] = useState("");
@@ -94,13 +93,11 @@ export default function SaleDetail({ editMode = false }) {
 
   useEffect(() => {
     fetchSale();
-  }, [id, token]);
+  }, [id]);
 
   const fetchSale = async () => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API}/sales/${id}`, { headers });
-      const saleData = response.data;
+      const saleData = await salesService.getSaleById(id);
       setSale(saleData);
       setEditCommission(saleData.commission?.toString() || "");
       setEditStatus(saleData.status || "");
@@ -120,24 +117,24 @@ export default function SaleDetail({ editMode = false }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
       const payload = {
         status: editStatus,
         notes: editNotes,
         active_date: editActiveDate ? editActiveDate.toISOString() : null,
         req: sale.category === "telecomunicacoes" ? editReq : null
       };
-      
-      // Include commission if user is Admin/BO and value changed
+
       if (isAdminOrBackoffice && editCommission) {
         const commissionValue = parseFloat(editCommission);
         if (!isNaN(commissionValue)) {
           payload.commission = commissionValue;
+          payload.commission_assigned_by = user?.name;
+          payload.commission_assigned_at = new Date().toISOString();
         }
       }
-      
-      const response = await axios.put(`${API}/sales/${id}`, payload, { headers });
-      setSale(response.data);
+
+      const updated = await salesService.updateSale(id, payload);
+      setSale(updated);
       setIsEditing(false);
       toast.success("Venda atualizada com sucesso");
     } catch (error) {

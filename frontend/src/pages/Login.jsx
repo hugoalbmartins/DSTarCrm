@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth, API } from "@/App";
+import { useAuth } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Lock, Mail } from "lucide-react";
-import axios from "axios";
+import { authService } from "@/services/authService";
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_partner-sales-hub-1/artifacts/6o47c762_Design%20sem%20nome%20%281%29.png";
 
@@ -14,42 +14,42 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(false);
-  const { login } = useAuth();
+  const { setUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Initialize system on first load
-    const initSystem = async () => {
+    const checkAuth = async () => {
       try {
-        setInitializing(true);
-        await axios.post(`${API}/init`);
+        const user = await authService.getCurrentUser();
+        if (user) {
+          setUser(user);
+          navigate("/dashboard");
+        }
       } catch (error) {
-        // System might already be initialized
-      } finally {
-        setInitializing(false);
+        console.error("Auth check error:", error);
       }
     };
-    initSystem();
-  }, []);
+    checkAuth();
+  }, [navigate, setUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error("Preencha todos os campos");
       return;
     }
 
     setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-
-    if (result.success) {
+    try {
+      const { user } = await authService.signIn(email, password);
+      setUser(user);
       toast.success("Login efetuado com sucesso!");
       navigate("/dashboard");
-    } else {
-      toast.error(result.error);
+    } catch (error) {
+      toast.error(error.message || "Erro ao fazer login");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -108,7 +108,7 @@ export default function Login() {
 
           <Button
             type="submit"
-            disabled={loading || initializing}
+            disabled={loading}
             className="w-full btn-primary btn-primary-glow"
             data-testid="login-submit-btn"
           >

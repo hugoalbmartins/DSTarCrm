@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { useAuth, API } from "@/App";
-import axios from "axios";
+import { useAuth } from "@/App";
+import { salesService } from "@/services/salesService";
+import { usersService } from "@/services/usersService";
+import { partnersService } from "@/services/partnersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,13 +45,11 @@ const CATEGORY_MAP = {
 };
 
 export default function Reports() {
-  const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [sellers, setSellers] = useState([]);
   const [partners, setPartners] = useState([]);
-  
-  // Filters
+
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [category, setCategory] = useState("");
@@ -59,17 +59,16 @@ export default function Reports() {
 
   useEffect(() => {
     fetchFiltersData();
-  }, [token]);
+  }, []);
 
   const fetchFiltersData = async () => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const [usersRes, partnersRes] = await Promise.all([
-        axios.get(`${API}/users`, { headers }),
-        axios.get(`${API}/partners`, { headers })
+      const [usersData, partnersData] = await Promise.all([
+        usersService.getUsersByRole("vendedor"),
+        partnersService.getPartners()
       ]);
-      setSellers(usersRes.data.filter(u => u.role === "vendedor"));
-      setPartners(partnersRes.data);
+      setSellers(usersData);
+      setPartners(partnersData);
     } catch (error) {
       console.error("Error fetching filters data:", error);
     }
@@ -78,18 +77,47 @@ export default function Reports() {
   const generateReport = async () => {
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const params = new URLSearchParams();
-      
-      if (startDate) params.append("start_date", startDate.toISOString());
-      if (endDate) params.append("end_date", endDate.toISOString());
-      if (category && category !== "all") params.append("category", category);
-      if (status && status !== "all") params.append("status", status);
-      if (sellerId && sellerId !== "all") params.append("seller_id", sellerId);
-      if (partnerId && partnerId !== "all") params.append("partner_id", partnerId);
+      let salesData = await salesService.getSales();
 
-      const response = await axios.get(`${API}/reports/sales?${params.toString()}`, { headers });
-      setReport(response.data);
+      if (startDate) {
+        salesData = salesData.filter(s => new Date(s.created_at) >= startDate);
+      }
+      if (endDate) {
+        salesData = salesData.filter(s => new Date(s.created_at) <= endDate);
+      }
+      if (category && category !== "all") {
+        salesData = salesData.filter(s => s.category === category);
+      }
+      if (status && status !== "all") {
+        salesData = salesData.filter(s => s.status === status);
+      }
+      if (sellerId && sellerId !== "all") {
+        salesData = salesData.filter(s => s.seller_id === sellerId);
+      }
+      if (partnerId && partnerId !== "all") {
+        salesData = salesData.filter(s => s.partner_id === partnerId);
+      }
+
+      const reportData = {
+        sales: salesData,
+        total_sales: salesData.length,
+        total_value: salesData.reduce((sum, s) => sum + (s.contract_value || 0), 0),
+        total_commission: salesData.reduce((sum, s) => sum + (s.commission || 0), 0),
+        by_category: {
+          energia: salesData.filter(s => s.category === 'energia').length,
+          telecomunicacoes: salesData.filter(s => s.category === 'telecomunicacoes').length,
+          paineis_solares: salesData.filter(s => s.category === 'paineis_solares').length
+        },
+        by_status: {
+          em_negociacao: salesData.filter(s => s.status === 'em_negociacao').length,
+          perdido: salesData.filter(s => s.status === 'perdido').length,
+          pendente: salesData.filter(s => s.status === 'pendente').length,
+          ativo: salesData.filter(s => s.status === 'ativo').length,
+          anulado: salesData.filter(s => s.status === 'anulado').length
+        }
+      };
+
+      setReport(reportData);
     } catch (error) {
       toast.error("Erro ao gerar relatório");
     } finally {

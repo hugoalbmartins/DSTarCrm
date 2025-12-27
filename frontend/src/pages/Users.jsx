@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useAuth, API } from "@/App";
-import axios from "axios";
+import { useAuth } from "@/App";
+import { usersService } from "@/services/usersService";
+import { authService } from "@/services/authService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

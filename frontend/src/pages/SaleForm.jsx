@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useAuth, API } from "@/App";
+import { useAuth } from "@/App";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { salesService } from "@/services/salesService";
+import { partnersService } from "@/services/partnersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

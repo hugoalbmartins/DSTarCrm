@@ -1,9 +1,9 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import { authService } from "@/services/authService";
 
 // Pages
 import Login from "@/pages/Login";
@@ -15,9 +15,6 @@ import Reports from "@/pages/Reports";
 import Users from "@/pages/Users";
 import Partners from "@/pages/Partners";
 import Layout from "@/components/Layout";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
 
 // Auth Context
 const AuthContext = createContext(null);
