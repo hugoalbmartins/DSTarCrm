@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_partner-sales-hub-1/artifacts/6o47c762_Design%20sem%20nome%20%281%29.png";
+const LOGO_URL = "https://images.pexels.com/photos/6954174/pexels-photo-6954174.jpeg?auto=compress&cs=tinysrgb&w=150&h=50&dpr=2";
 
 export const Layout = () => {
   const { user, logout, isAdmin, isAdminOrBackoffice } = useAuth();

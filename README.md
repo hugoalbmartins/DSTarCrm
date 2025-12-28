@@ -1,6 +1,6 @@
-# Partner Sales Hub
+# Leiritrix CRM
 
-Sistema de gestão de vendas para parceiros Leiritrix - Migrado para Supabase.
+Sistema de gestão de vendas para parceiros Leiritrix.
 
 ## Funcionalidades
 
@@ -22,17 +22,15 @@ Sistema de gestão de vendas para parceiros Leiritrix - Migrado para Supabase.
 ## Estrutura de Pastas
 
 ```
-project/
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # Componentes UI reutilizáveis
-│   │   ├── pages/          # Páginas da aplicação
-│   │   ├── services/       # Serviços de integração Supabase
-│   │   ├── lib/            # Configuração Supabase
-│   │   └── hooks/          # Custom hooks
-│   ├── public/
-│   └── package.json
-└── README.md
+frontend/
+├── src/
+│   ├── components/     # Componentes UI (shadcn/ui)
+│   ├── pages/          # Páginas da aplicação
+│   ├── services/       # Serviços de integração Supabase
+│   ├── lib/            # Configuração Supabase
+│   └── hooks/          # Custom hooks
+├── public/
+└── package.json
 ```
 
 ## Como Executar
