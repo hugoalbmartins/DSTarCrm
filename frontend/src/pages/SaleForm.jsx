@@ -3,6 +3,7 @@ import { useAuth } from "@/App";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { salesService } from "@/services/salesService";
 import { partnersService } from "@/services/partnersService";
+import { usersService } from "@/services/usersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ export default function SaleForm() {
 
   const [loading, setLoading] = useState(false);
   const [partners, setPartners] = useState([]);
+  const [sellers, setSellers] = useState([]);
   const [loadingPartners, setLoadingPartners] = useState(true);
   const [loadingRefidData, setLoadingRefidData] = useState(false);
 
@@ -65,6 +67,7 @@ export default function SaleForm() {
     category: "",
     sale_type: "",
     partner_id: "",
+    seller_id: "none",
     contract_value: "",
     loyalty_months: "",
     notes: "",
@@ -77,6 +80,7 @@ export default function SaleForm() {
 
   useEffect(() => {
     fetchPartners();
+    fetchSellers();
     const refidFrom = searchParams.get('refid_from');
     if (refidFrom) {
       loadRefidData(refidFrom);
@@ -92,6 +96,15 @@ export default function SaleForm() {
       toast.error("Erro ao carregar parceiros");
     } finally {
       setLoadingPartners(false);
+    }
+  };
+
+  const fetchSellers = async () => {
+    try {
+      const sellersData = await usersService.getUsersByRole("vendedor");
+      setSellers(sellersData);
+    } catch (error) {
+      console.error("Error fetching sellers:", error);
     }
   };
 
@@ -181,7 +194,7 @@ export default function SaleForm() {
     try {
       const payload = {
         ...formData,
-        seller_id: user.id,
+        seller_id: formData.seller_id === "none" ? null : formData.seller_id,
         status: 'em_negociacao',
         contract_value: parseFloat(formData.contract_value) || 0,
         loyalty_months: parseInt(formData.loyalty_months) || 0,
@@ -429,6 +442,25 @@ export default function SaleForm() {
                     {partners.map((partner) => (
                       <SelectItem key={partner.id} value={partner.id} className="text-white hover:bg-white/10">
                         {partner.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="seller_id" className="form-label">Vendedor</Label>
+                <Select value={formData.seller_id} onValueChange={(v) => handleChange("seller_id", v)}>
+                  <SelectTrigger className="form-input" data-testid="seller-select">
+                    <SelectValue placeholder="Selecione o vendedor" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#082d32] border-white/10">
+                    <SelectItem value="none" className="text-white hover:bg-white/10">
+                      Nenhum
+                    </SelectItem>
+                    {sellers.map((seller) => (
+                      <SelectItem key={seller.id} value={seller.id} className="text-white hover:bg-white/10">
+                        {seller.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
