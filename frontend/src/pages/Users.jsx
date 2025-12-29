@@ -74,6 +74,7 @@ export default function Users() {
     const generated = generatePassword(12);
     setFormData({ ...formData, password: generated });
     setShowPassword(true);
+    toast.success("Password sugerida (pode editar se preferir)");
   };
 
   useEffect(() => {
@@ -349,7 +350,7 @@ export default function Users() {
                   onClick={handleGeneratePassword}
                   variant="outline"
                   className="form-input px-3"
-                  title="Gerar password automática"
+                  title="Sugerir password segura (editável)"
                 >
                   <RefreshCw size={18} />
                 </Button>

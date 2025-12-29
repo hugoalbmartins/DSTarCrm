@@ -27,6 +27,8 @@ export function PasswordChangeModal({ open, onPasswordChanged }) {
     const generated = generatePassword(12);
     setNewPassword(generated);
     setConfirmPassword(generated);
+    setShowNew(true);
+    setShowConfirm(true);
   };
 
   const handleSubmit = async (e) => {
@@ -122,7 +124,7 @@ export function PasswordChangeModal({ open, onPasswordChanged }) {
                 onClick={handleGeneratePassword}
                 variant="outline"
                 className="form-input px-3"
-                title="Gerar password automática"
+                title="Sugerir password segura (editável)"
               >
                 <RefreshCw size={18} />
               </Button>
