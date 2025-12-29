@@ -62,18 +62,21 @@ export default function Users() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     role: "vendedor"
   });
 
   const handleGeneratePassword = () => {
     const generated = generatePassword(12);
-    setFormData({ ...formData, password: generated });
+    setFormData({ ...formData, password: generated, confirmPassword: generated });
     setShowPassword(true);
+    setShowConfirmPassword(true);
     toast.success("Password sugerida (pode editar se preferir)");
   };
 
@@ -94,7 +97,9 @@ export default function Users() {
 
   const openCreateModal = () => {
     setEditingUser(null);
-    setFormData({ name: "", email: "", password: "", role: "vendedor" });
+    setFormData({ name: "", email: "", password: "", confirmPassword: "", role: "vendedor" });
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setModalOpen(true);
   };
 
@@ -104,8 +109,11 @@ export default function Users() {
       name: user.name || "",
       email: user.email || "",
       password: "",
+      confirmPassword: "",
       role: user.role || "vendedor"
     });
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setModalOpen(true);
   };
 
@@ -117,6 +125,11 @@ export default function Users() {
 
     if (!editingUser && !formData.password) {
       toast.error("Password é obrigatória para novos utilizadores");
+      return;
+    }
+
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      toast.error("As passwords não coincidem");
       return;
     }
 
@@ -354,6 +367,28 @@ export default function Users() {
                 >
                   <RefreshCw size={18} />
                 </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="form-label">
+                Confirmar Palavra-passe {editingUser ? "(deixe vazio para manter)" : "*"}
+              </Label>
+              <div className="relative mt-1">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="form-input pr-10"
+                  placeholder="••••••••"
+                  data-testid="user-confirm-password-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
             <div>
