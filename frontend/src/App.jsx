@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { authService } from "@/services/authService";
 import { PasswordChangeModal } from "@/components/PasswordChangeModal";
+import { useIdleTimeout } from "@/hooks/useIdleTimeout";
 
 // Pages
 import Login from "@/pages/Login";
@@ -78,6 +79,19 @@ const AuthProvider = ({ children }) => {
       toast.error("Erro ao fazer logout");
     }
   };
+
+  const handleIdleTimeout = async () => {
+    try {
+      await authService.signOut();
+      setUser(null);
+      setShowPasswordChange(false);
+      toast.warning("Sessão expirada por inatividade");
+    } catch (error) {
+      console.error("Error during idle logout:", error);
+    }
+  };
+
+  useIdleTimeout(user ? handleIdleTimeout : () => {}, 1800000);
 
   const handlePasswordChanged = async (currentPassword, newPassword) => {
     await authService.changePassword(currentPassword, newPassword);
