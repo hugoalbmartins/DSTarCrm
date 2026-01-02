@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   PlusCircle,
-  Building2
+  Building2,
+  Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
@@ -27,6 +28,7 @@ export const Layout = () => {
     { name: "Vendas", href: "/sales", icon: ShoppingCart, show: true },
     { name: "Nova Venda", href: "/sales/new", icon: PlusCircle, show: true },
     { name: "Parceiros", href: "/partners", icon: Building2, show: isAdminOrBackoffice },
+    { name: "Operadoras", href: "/operators", icon: Radio, show: isAdminOrBackoffice },
     { name: "Relatórios", href: "/reports", icon: FileText, show: isAdminOrBackoffice },
     { name: "Utilizadores", href: "/users", icon: Users, show: isAdmin },
   ];

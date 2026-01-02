@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -42,8 +43,17 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Radio
+  Radio,
+  Zap,
+  Sun
 } from "lucide-react";
+
+const CATEGORY_OPTIONS = [
+  { value: "energia_eletricidade", label: "Energia - Eletricidade", icon: Zap },
+  { value: "energia_gas", label: "Energia - Gás", icon: Zap },
+  { value: "telecomunicacoes", label: "Telecomunicações", icon: Phone },
+  { value: "paineis_solares", label: "Painéis Solares", icon: Sun }
+];
 
 export default function Partners() {
   const [partners, setPartners] = useState([]);
@@ -73,6 +83,7 @@ export default function Partners() {
 
   const [operatorFormData, setOperatorFormData] = useState({
     name: "",
+    categories: [],
     commission_visible_to_bo: false
   });
 
@@ -218,6 +229,7 @@ export default function Partners() {
     setEditingOperator(null);
     setOperatorFormData({
       name: "",
+      categories: [],
       commission_visible_to_bo: false
     });
     setOperatorModalOpen(true);
@@ -227,14 +239,29 @@ export default function Partners() {
     setEditingOperator(operator);
     setOperatorFormData({
       name: operator.name || "",
+      categories: operator.categories || [],
       commission_visible_to_bo: operator.commission_visible_to_bo || false
     });
     setOperatorModalOpen(true);
   };
 
+  const handleOperatorCategoryToggle = (category) => {
+    setOperatorFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter(c => c !== category)
+        : [...prev.categories, category]
+    }));
+  };
+
   const handleSaveOperator = async () => {
     if (!operatorFormData.name) {
       toast.error("Nome da operadora é obrigatório");
+      return;
+    }
+
+    if (operatorFormData.categories.length === 0) {
+      toast.error("Selecione pelo menos uma categoria");
       return;
     }
 
@@ -711,6 +738,36 @@ export default function Partners() {
                 placeholder="Nome da operadora"
               />
             </div>
+
+            <div>
+              <Label className="form-label mb-3">Categorias de Vendas *</Label>
+              <div className="space-y-2">
+                {CATEGORY_OPTIONS.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <div
+                      key={category.value}
+                      className="flex items-center space-x-2 p-3 rounded-lg bg-[#0d474f] hover:bg-[#0d474f]/80 cursor-pointer"
+                      onClick={() => handleOperatorCategoryToggle(category.value)}
+                    >
+                      <Checkbox
+                        id={`partner-${category.value}`}
+                        checked={operatorFormData.categories.includes(category.value)}
+                        onCheckedChange={() => handleOperatorCategoryToggle(category.value)}
+                      />
+                      <Icon size={16} className="text-[#c8f31d]" />
+                      <Label
+                        htmlFor={`partner-${category.value}`}
+                        className="text-white text-sm cursor-pointer flex-1"
+                      >
+                        {category.label}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between p-4 rounded-lg bg-[#0d474f]">
               <div className="flex-1">
                 <Label className="form-label mb-1">Comissões Visíveis para Backoffice</Label>

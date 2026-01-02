@@ -15,6 +15,7 @@ import SaleDetail from "@/pages/SaleDetail";
 import Reports from "@/pages/Reports";
 import Users from "@/pages/Users";
 import Partners from "@/pages/Partners";
+import Operators from "@/pages/Operators";
 import Layout from "@/components/Layout";
 
 // Auth Context
@@ -157,6 +158,11 @@ function AppRoutes() {
         <Route path="partners" element={
           <ProtectedRoute requireAdminOrBO>
             <Partners />
+          </ProtectedRoute>
+        } />
+        <Route path="operators" element={
+          <ProtectedRoute requireAdminOrBO>
+            <Operators />
           </ProtectedRoute>
         } />
         <Route path="reports" element={

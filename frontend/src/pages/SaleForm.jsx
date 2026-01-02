@@ -129,6 +129,38 @@ export default function SaleForm() {
     }
   };
 
+  const getFilteredOperators = () => {
+    if (!formData.category) return operators;
+
+    const requiredCategories = [];
+
+    if (formData.category === 'energia') {
+      if (formData.energy_type === 'eletricidade') {
+        requiredCategories.push('energia_eletricidade');
+      } else if (formData.energy_type === 'gas') {
+        requiredCategories.push('energia_gas');
+      } else if (formData.energy_type === 'dual') {
+        requiredCategories.push('energia_eletricidade', 'energia_gas');
+      }
+    } else if (formData.category === 'telecomunicacoes') {
+      requiredCategories.push('telecomunicacoes');
+    } else if (formData.category === 'paineis_solares') {
+      requiredCategories.push('paineis_solares');
+    }
+
+    if (requiredCategories.length === 0) return operators;
+
+    return operators.filter(op => {
+      if (!op.categories || op.categories.length === 0) return false;
+
+      if (formData.category === 'energia' && formData.energy_type === 'dual') {
+        return requiredCategories.every(cat => op.categories.includes(cat));
+      }
+
+      return requiredCategories.some(cat => op.categories.includes(cat));
+    });
+  };
+
   useEffect(() => {
     if (formData.partner_id) {
       fetchOperators(formData.partner_id);
@@ -137,6 +169,14 @@ export default function SaleForm() {
       handleChange("operator_id", "");
     }
   }, [formData.partner_id]);
+
+  useEffect(() => {
+    const filtered = getFilteredOperators();
+    const currentOperatorStillValid = filtered.some(op => op.id === formData.operator_id);
+    if (!currentOperatorStillValid && formData.operator_id) {
+      handleChange("operator_id", "");
+    }
+  }, [formData.category, formData.energy_type]);
 
   const loadRefidData = async (saleId) => {
     setLoadingRefidData(true);
@@ -488,30 +528,34 @@ export default function SaleForm() {
                 <Select
                   value={formData.operator_id}
                   onValueChange={(v) => handleChange("operator_id", v)}
-                  disabled={!formData.partner_id || loadingOperators}
+                  disabled={!formData.partner_id || loadingOperators || !formData.category || (formData.category === 'energia' && !formData.energy_type)}
                 >
                   <SelectTrigger className="form-input" data-testid="operator-select">
                     <SelectValue placeholder={
                       !formData.partner_id
                         ? "Selecione primeiro um parceiro"
+                        : !formData.category
+                        ? "Selecione primeiro a categoria"
+                        : (formData.category === 'energia' && !formData.energy_type)
+                        ? "Selecione o tipo de energia"
                         : loadingOperators
                         ? "A carregar operadoras..."
-                        : operators.length === 0
-                        ? "Sem operadoras disponíveis"
+                        : getFilteredOperators().length === 0
+                        ? "Sem operadoras disponíveis para esta categoria"
                         : "Selecione a operadora"
                     } />
                   </SelectTrigger>
                   <SelectContent className="bg-[#082d32] border-white/10">
-                    {operators.map((operator) => (
+                    {getFilteredOperators().map((operator) => (
                       <SelectItem key={operator.id} value={operator.id} className="text-white hover:bg-white/10">
                         {operator.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {formData.partner_id && operators.length === 0 && !loadingOperators && (
+                {formData.partner_id && formData.category && getFilteredOperators().length === 0 && !loadingOperators && (
                   <p className="text-orange-400 text-xs mt-1">
-                    Este parceiro não tem operadoras. Adicione uma operadora na página de Parceiros.
+                    Este parceiro não tem operadoras para esta categoria. Adicione uma operadora na página de Operadoras.
                   </p>
                 )}
               </div>
