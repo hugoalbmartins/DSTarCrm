@@ -126,11 +126,6 @@ export default function SaleForm() {
     setLoadingOperators(true);
     try {
       const operatorsData = await operatorsService.getOperatorsByPartner(partnerId);
-      console.log('Fetched operators for partner:', {
-        partnerId,
-        operatorsCount: operatorsData.length,
-        operators: operatorsData.map(o => ({ id: o.id, name: o.name, categories: o.categories }))
-      });
       setOperators(operatorsData);
     } catch (error) {
       console.error("Error fetching operators:", error);
@@ -169,15 +164,6 @@ export default function SaleForm() {
       }
 
       return requiredCategories.some(cat => op.categories.includes(cat));
-    });
-
-    console.log('Filtering operators:', {
-      category: formData.category,
-      energy_type: formData.energy_type,
-      requiredCategories,
-      totalOperators: operators.length,
-      filteredOperators: filtered.length,
-      filtered: filtered.map(o => ({ name: o.name, categories: o.categories }))
     });
 
     return filtered;
@@ -289,9 +275,11 @@ export default function SaleForm() {
     setLoading(true);
 
     try {
+      const isBackoffice = formData.seller_id === "backoffice";
       const payload = {
         ...formData,
-        seller_id: formData.seller_id === "none" ? null : formData.seller_id,
+        seller_id: (formData.seller_id === "none" || formData.seller_id === "backoffice") ? null : formData.seller_id,
+        is_backoffice: isBackoffice,
         status: 'em_negociacao',
         contract_value: parseFloat(formData.contract_value) || 0,
         loyalty_months: parseInt(formData.loyalty_months) || 0,
@@ -611,6 +599,9 @@ export default function SaleForm() {
                     <SelectValue placeholder="Selecione o vendedor" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#082d32] border-white/10">
+                    <SelectItem value="backoffice" className="text-white hover:bg-white/10">
+                      Backoffice
+                    </SelectItem>
                     <SelectItem value="none" className="text-white hover:bg-white/10">
                       Nenhum
                     </SelectItem>

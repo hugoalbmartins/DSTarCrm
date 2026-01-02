@@ -121,13 +121,23 @@ export default function Dashboard() {
       const calcTotalComissions = (salesList) => {
         return salesList
           .filter(s => s.operators?.commission_visible_to_bo)
-          .reduce((sum, s) => sum + (s.commission_seller || 0) + (s.commission_partner || 0), 0);
+          .reduce((sum, s) => {
+            if (s.is_backoffice) {
+              return sum + (s.commission_backoffice || 0);
+            }
+            return sum + (s.commission_seller || 0) + (s.commission_partner || 0);
+          }, 0);
       };
 
       const calcComissoesAtivas = (salesList) => {
         return salesList
           .filter(s => s.status === 'ativo' && s.operators?.commission_visible_to_bo)
-          .reduce((sum, s) => sum + (s.commission_seller || 0) + (s.commission_partner || 0), 0);
+          .reduce((sum, s) => {
+            if (s.is_backoffice) {
+              return sum + (s.commission_backoffice || 0);
+            }
+            return sum + (s.commission_seller || 0) + (s.commission_partner || 0);
+          }, 0);
       };
 
       const currentMonthMensalidades = calcMensalidadesTelecom(currentMonthSales);
