@@ -37,6 +37,12 @@ const ENERGY_TYPES = [
   { value: "dual", label: "Dual (Eletricidade + Gás)" }
 ];
 
+const ENERGY_TYPE_MAP = {
+  eletricidade: "Eletricidade",
+  gas: "Gás",
+  dual: "Dual (Eletricidade + Gás)"
+};
+
 const POTENCIAS = [
   "1.15", "2.3", "3.45", "4.6", "5.75", "6.9", "10.35", "13.8", 
   "17.25", "20.7", "27.6", "34.5", "41.4", "Outra"
@@ -457,10 +463,10 @@ export default function SaleForm() {
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="category" className="form-label">Categoria *</Label>
-                <Select 
-                  value={formData.category} 
+                <Select
+                  value={formData.category}
                   onValueChange={(v) => {
                     handleChange("category", v);
                     if (v === "paineis_solares") {
@@ -488,6 +494,28 @@ export default function SaleForm() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Energy Type - show immediately after selecting Energia */}
+              {showEnergyFields && (
+                <div className="md:col-span-2 p-4 bg-[#c8f31d]/5 border border-[#c8f31d]/20 rounded-lg">
+                  <Label htmlFor="energy_type" className="form-label flex items-center gap-2">
+                    <Zap size={16} className="text-[#c8f31d]" />
+                    Tipo de Energia * (selecione para ver as operadoras disponíveis)
+                  </Label>
+                  <Select value={formData.energy_type} onValueChange={(v) => handleChange("energy_type", v)}>
+                    <SelectTrigger className="form-input mt-2" data-testid="energy-type-select">
+                      <SelectValue placeholder="Selecione o tipo de energia" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#082d32] border-white/10">
+                      {ENERGY_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value} className="text-white hover:bg-white/10">
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {showSaleType && (
                 <div>
@@ -537,11 +565,11 @@ export default function SaleForm() {
                         : !formData.category
                         ? "Selecione primeiro a categoria"
                         : (formData.category === 'energia' && !formData.energy_type)
-                        ? "Selecione o tipo de energia"
+                        ? "↑ Selecione o tipo de energia acima"
                         : loadingOperators
                         ? "A carregar operadoras..."
                         : getFilteredOperators().length === 0
-                        ? "Sem operadoras disponíveis para esta categoria"
+                        ? "Sem operadoras disponíveis"
                         : "Selecione a operadora"
                     } />
                   </SelectTrigger>
@@ -553,7 +581,7 @@ export default function SaleForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                {formData.partner_id && formData.category && getFilteredOperators().length === 0 && !loadingOperators && (
+                {formData.partner_id && formData.category && (formData.category !== 'energia' || formData.energy_type) && getFilteredOperators().length === 0 && !loadingOperators && (
                   <p className="text-orange-400 text-xs mt-1">
                     Este parceiro não tem operadoras para esta categoria. Adicione uma operadora na página de Operadoras.
                   </p>
@@ -615,32 +643,16 @@ export default function SaleForm() {
         </Card>
 
         {/* Energy Specific Fields */}
-        {showEnergyFields && (
+        {showEnergyFields && formData.energy_type && (
           <Card className="card-leiritrix mt-6">
             <CardHeader className="border-b border-white/5 pb-4">
               <CardTitle className="text-white font-['Manrope'] text-lg flex items-center gap-2">
                 <Zap size={20} className="text-[#c8f31d]" />
-                Dados de Energia
+                Detalhes de Energia ({ENERGY_TYPE_MAP[formData.energy_type]})
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <Label htmlFor="energy_type" className="form-label">Tipo de Energia *</Label>
-                  <Select value={formData.energy_type} onValueChange={(v) => handleChange("energy_type", v)}>
-                    <SelectTrigger className="form-input" data-testid="energy-type-select">
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#082d32] border-white/10">
-                      {ENERGY_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value} className="text-white hover:bg-white/10">
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 {/* Electricity fields */}
                 {showElectricityFields && (
                   <>
