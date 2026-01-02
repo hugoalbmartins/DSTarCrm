@@ -3,6 +3,7 @@ import { useAuth } from "@/App";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { salesService } from "@/services/salesService";
 import { partnersService } from "@/services/partnersService";
+import { operatorsService } from "@/services/operatorsService";
 import { usersService } from "@/services/usersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,9 @@ export default function SaleForm() {
   const [loading, setLoading] = useState(false);
   const [partners, setPartners] = useState([]);
   const [sellers, setSellers] = useState([]);
+  const [operators, setOperators] = useState([]);
   const [loadingPartners, setLoadingPartners] = useState(true);
+  const [loadingOperators, setLoadingOperators] = useState(false);
   const [loadingRefidData, setLoadingRefidData] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -67,6 +70,7 @@ export default function SaleForm() {
     category: "",
     sale_type: "",
     partner_id: "",
+    operator_id: "",
     seller_id: "none",
     contract_value: "",
     loyalty_months: "",
@@ -108,6 +112,32 @@ export default function SaleForm() {
     }
   };
 
+  const fetchOperators = async (partnerId) => {
+    if (!partnerId) {
+      setOperators([]);
+      return;
+    }
+    setLoadingOperators(true);
+    try {
+      const operatorsData = await operatorsService.getOperatorsByPartner(partnerId);
+      setOperators(operatorsData);
+    } catch (error) {
+      console.error("Error fetching operators:", error);
+      toast.error("Erro ao carregar operadoras");
+    } finally {
+      setLoadingOperators(false);
+    }
+  };
+
+  useEffect(() => {
+    if (formData.partner_id) {
+      fetchOperators(formData.partner_id);
+    } else {
+      setOperators([]);
+      handleChange("operator_id", "");
+    }
+  }, [formData.partner_id]);
+
   const loadRefidData = async (saleId) => {
     setLoadingRefidData(true);
     try {
@@ -143,6 +173,11 @@ export default function SaleForm() {
     // Validation
     if (!formData.client_name || !formData.category || !formData.partner_id) {
       toast.error("Preencha os campos obrigatórios (Nome, Categoria, Parceiro)");
+      return;
+    }
+
+    if (!formData.operator_id) {
+      toast.error("Selecione uma operadora");
       return;
     }
 
@@ -446,6 +481,39 @@ export default function SaleForm() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="operator_id" className="form-label">Operadora *</Label>
+                <Select
+                  value={formData.operator_id}
+                  onValueChange={(v) => handleChange("operator_id", v)}
+                  disabled={!formData.partner_id || loadingOperators}
+                >
+                  <SelectTrigger className="form-input" data-testid="operator-select">
+                    <SelectValue placeholder={
+                      !formData.partner_id
+                        ? "Selecione primeiro um parceiro"
+                        : loadingOperators
+                        ? "A carregar operadoras..."
+                        : operators.length === 0
+                        ? "Sem operadoras disponíveis"
+                        : "Selecione a operadora"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#082d32] border-white/10">
+                    {operators.map((operator) => (
+                      <SelectItem key={operator.id} value={operator.id} className="text-white hover:bg-white/10">
+                        {operator.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.partner_id && operators.length === 0 && !loadingOperators && (
+                  <p className="text-orange-400 text-xs mt-1">
+                    Este parceiro não tem operadoras. Adicione uma operadora na página de Parceiros.
+                  </p>
+                )}
               </div>
 
               <div>

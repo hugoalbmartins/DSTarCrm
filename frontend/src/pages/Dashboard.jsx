@@ -119,13 +119,15 @@ export default function Dashboard() {
       };
 
       const calcTotalComissions = (salesList) => {
-        return salesList.reduce((sum, s) => sum + (s.commission || 0), 0);
+        return salesList
+          .filter(s => s.operators?.commission_visible_to_bo)
+          .reduce((sum, s) => sum + (s.commission_seller || 0) + (s.commission_partner || 0), 0);
       };
 
       const calcComissoesAtivas = (salesList) => {
         return salesList
-          .filter(s => s.status === 'ativo')
-          .reduce((sum, s) => sum + (s.commission || 0), 0);
+          .filter(s => s.status === 'ativo' && s.operators?.commission_visible_to_bo)
+          .reduce((sum, s) => sum + (s.commission_seller || 0) + (s.commission_partner || 0), 0);
       };
 
       const currentMonthMensalidades = calcMensalidadesTelecom(currentMonthSales);

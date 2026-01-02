@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { partnersService } from "@/services/partnersService";
+import { operatorsService } from "@/services/operatorsService";
 import { generatePassword, validatePassword } from "@/utils/passwordGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +41,8 @@ import {
   EyeOff,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  Radio
 } from "lucide-react";
 
 export default function Partners() {
@@ -53,12 +56,24 @@ export default function Partners() {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordCopied, setPasswordCopied] = useState(false);
 
+  const [operatorsModalOpen, setOperatorsModalOpen] = useState(false);
+  const [selectedPartner, setSelectedPartner] = useState(null);
+  const [operators, setOperators] = useState([]);
+  const [operatorModalOpen, setOperatorModalOpen] = useState(false);
+  const [editingOperator, setEditingOperator] = useState(null);
+  const [operatorDeleteId, setOperatorDeleteId] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     contact_person: "",
     phone: "",
     password: ""
+  });
+
+  const [operatorFormData, setOperatorFormData] = useState({
+    name: "",
+    commission_visible_to_bo: false
   });
 
   useEffect(() => {
@@ -188,6 +203,89 @@ export default function Partners() {
     }
   };
 
+  const openOperatorsModal = async (partner) => {
+    setSelectedPartner(partner);
+    try {
+      const operatorsData = await operatorsService.getOperatorsByPartner(partner.id);
+      setOperators(operatorsData);
+      setOperatorsModalOpen(true);
+    } catch (error) {
+      toast.error("Erro ao carregar operadoras");
+    }
+  };
+
+  const openCreateOperatorModal = () => {
+    setEditingOperator(null);
+    setOperatorFormData({
+      name: "",
+      commission_visible_to_bo: false
+    });
+    setOperatorModalOpen(true);
+  };
+
+  const openEditOperatorModal = (operator) => {
+    setEditingOperator(operator);
+    setOperatorFormData({
+      name: operator.name || "",
+      commission_visible_to_bo: operator.commission_visible_to_bo || false
+    });
+    setOperatorModalOpen(true);
+  };
+
+  const handleSaveOperator = async () => {
+    if (!operatorFormData.name) {
+      toast.error("Nome da operadora é obrigatório");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (editingOperator) {
+        const updated = await operatorsService.updateOperator(editingOperator.id, operatorFormData);
+        setOperators(operators.map(o => o.id === editingOperator.id ? updated : o));
+        toast.success("Operadora atualizada");
+      } else {
+        const created = await operatorsService.createOperator({
+          ...operatorFormData,
+          partner_id: selectedPartner.id,
+          active: true
+        });
+        setOperators([...operators, created]);
+        toast.success("Operadora criada");
+      }
+      setOperatorModalOpen(false);
+    } catch (error) {
+      toast.error("Erro ao guardar operadora");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteOperator = async () => {
+    if (!operatorDeleteId) return;
+
+    try {
+      await operatorsService.deleteOperator(operatorDeleteId);
+      setOperators(operators.filter(o => o.id !== operatorDeleteId));
+      toast.success("Operadora eliminada");
+    } catch (error) {
+      toast.error("Erro ao eliminar operadora");
+    } finally {
+      setOperatorDeleteId(null);
+    }
+  };
+
+  const toggleOperatorActive = async (operatorId) => {
+    try {
+      const operator = operators.find(o => o.id === operatorId);
+      const updated = await operatorsService.toggleOperatorActive(operatorId, !operator.active);
+      setOperators(operators.map(o => o.id === operatorId ? updated : o));
+      toast.success("Status da operadora atualizado");
+    } catch (error) {
+      toast.error("Erro ao atualizar status");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -257,35 +355,47 @@ export default function Partners() {
                   )}
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-white/5">
+                <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
                   <Button
-                    onClick={() => openEditModal(partner)}
+                    onClick={() => openOperatorsModal(partner)}
                     variant="ghost"
                     size="sm"
-                    className="flex-1 text-white/70 hover:text-[#c8f31d]"
-                    data-testid={`edit-partner-${partner.id}`}
+                    className="w-full text-[#c8f31d] hover:bg-[#c8f31d]/10 justify-start"
+                    data-testid={`operators-partner-${partner.id}`}
                   >
-                    <Edit2 size={16} className="mr-1" />
-                    Editar
+                    <Radio size={16} className="mr-2" />
+                    Gerir Operadoras
                   </Button>
-                  <Button
-                    onClick={() => toggleActive(partner.id)}
-                    variant="ghost"
-                    size="sm"
-                    className={`${partner.active ? 'text-red-400 hover:bg-red-400/10' : 'text-green-400 hover:bg-green-400/10'}`}
-                    data-testid={`toggle-partner-${partner.id}`}
-                  >
-                    {partner.active ? <PowerOff size={16} /> : <Power size={16} />}
-                  </Button>
-                  <Button
-                    onClick={() => setDeleteId(partner.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-white/70 hover:text-red-400"
-                    data-testid={`delete-partner-${partner.id}`}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => openEditModal(partner)}
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 text-white/70 hover:text-[#c8f31d]"
+                      data-testid={`edit-partner-${partner.id}`}
+                    >
+                      <Edit2 size={16} className="mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      onClick={() => toggleActive(partner.id)}
+                      variant="ghost"
+                      size="sm"
+                      className={`${partner.active ? 'text-red-400 hover:bg-red-400/10' : 'text-green-400 hover:bg-green-400/10'}`}
+                      data-testid={`toggle-partner-${partner.id}`}
+                    >
+                      {partner.active ? <PowerOff size={16} /> : <Power size={16} />}
+                    </Button>
+                    <Button
+                      onClick={() => setDeleteId(partner.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-white/70 hover:text-red-400"
+                      data-testid={`delete-partner-${partner.id}`}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -473,6 +583,188 @@ export default function Partners() {
             <AlertDialogCancel className="btn-secondary">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Operators Modal */}
+      <Dialog open={operatorsModalOpen} onOpenChange={setOperatorsModalOpen}>
+        <DialogContent className="bg-[#082d32] border-white/10 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white font-['Manrope']">
+              Operadoras - {selectedPartner?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-white/50 text-sm">
+                {operators.length} operadora{operators.length !== 1 ? 's' : ''}
+              </p>
+              <Button
+                onClick={openCreateOperatorModal}
+                size="sm"
+                className="btn-primary btn-primary-glow flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Nova Operadora
+              </Button>
+            </div>
+
+            {operators.length > 0 ? (
+              <div className="space-y-2">
+                {operators.map((operator) => (
+                  <Card key={operator.id} className="card-leiritrix">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${operator.active ? 'bg-[#c8f31d]/20' : 'bg-white/10'}`}>
+                            <Radio size={16} className={operator.active ? 'text-[#c8f31d]' : 'text-white/40'} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white font-medium">{operator.name}</p>
+                            <div className="flex gap-2 mt-1">
+                              {operator.commission_visible_to_bo ? (
+                                <Badge className="bg-green-500/20 text-green-400 border border-green-500/30 text-xs">
+                                  Comissões Visíveis BO
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs">
+                                  Comissões Ocultas BO
+                                </Badge>
+                              )}
+                              {!operator.active && (
+                                <Badge className="bg-red-500/20 text-red-400 border border-red-500/30 text-xs">
+                                  Inativa
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => openEditOperatorModal(operator)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-white/70 hover:text-[#c8f31d]"
+                          >
+                            <Edit2 size={16} />
+                          </Button>
+                          <Button
+                            onClick={() => toggleOperatorActive(operator.id)}
+                            variant="ghost"
+                            size="sm"
+                            className={`${operator.active ? 'text-red-400 hover:bg-red-400/10' : 'text-green-400 hover:bg-green-400/10'}`}
+                          >
+                            {operator.active ? <PowerOff size={16} /> : <Power size={16} />}
+                          </Button>
+                          <Button
+                            onClick={() => setOperatorDeleteId(operator.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-white/70 hover:text-red-400"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-white/50">
+                <Radio size={48} className="mx-auto mb-2 text-white/20" />
+                <p>Nenhuma operadora registada</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setOperatorsModalOpen(false)}
+              className="btn-secondary"
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Operator Modal */}
+      <Dialog open={operatorModalOpen} onOpenChange={setOperatorModalOpen}>
+        <DialogContent className="bg-[#082d32] border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white font-['Manrope']">
+              {editingOperator ? "Editar Operadora" : "Nova Operadora"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="form-label">Nome da Operadora *</Label>
+              <Input
+                value={operatorFormData.name}
+                onChange={(e) => setOperatorFormData({ ...operatorFormData, name: e.target.value })}
+                className="form-input mt-1"
+                placeholder="Nome da operadora"
+              />
+            </div>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-[#0d474f]">
+              <div className="flex-1">
+                <Label className="form-label mb-1">Comissões Visíveis para Backoffice</Label>
+                <p className="text-white/50 text-xs">
+                  Se ativo, os utilizadores de backoffice podem ver e registar comissões nas vendas desta operadora
+                </p>
+              </div>
+              <Switch
+                checked={operatorFormData.commission_visible_to_bo}
+                onCheckedChange={(checked) =>
+                  setOperatorFormData({ ...operatorFormData, commission_visible_to_bo: checked })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setOperatorModalOpen(false)}
+              className="btn-secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveOperator}
+              disabled={saving}
+              className="btn-primary btn-primary-glow"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  A guardar...
+                </>
+              ) : (
+                editingOperator ? "Guardar" : "Criar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Operator Confirmation */}
+      <AlertDialog open={!!operatorDeleteId} onOpenChange={() => setOperatorDeleteId(null)}>
+        <AlertDialogContent className="bg-[#082d32] border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Eliminar Operadora</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/60">
+              Tem a certeza que pretende eliminar esta operadora? Esta ação não pode ser revertida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="btn-secondary">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOperator}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               Eliminar

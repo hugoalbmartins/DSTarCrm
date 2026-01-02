@@ -3,7 +3,16 @@ import { notificationsService } from './notificationsService';
 
 export const salesService = {
   async getSales(sellerId = null, filters = {}) {
-    let query = supabase.from('sales').select('*');
+    let query = supabase
+      .from('sales')
+      .select(`
+        *,
+        operators:operator_id (
+          id,
+          name,
+          commission_visible_to_bo
+        )
+      `);
 
     if (sellerId) {
       query = query.eq('seller_id', sellerId);
@@ -30,7 +39,14 @@ export const salesService = {
   async getSaleById(saleId) {
     const { data, error } = await supabase
       .from('sales')
-      .select('*')
+      .select(`
+        *,
+        operators:operator_id (
+          id,
+          name,
+          commission_visible_to_bo
+        )
+      `)
       .eq('id', saleId)
       .maybeSingle();
 
@@ -113,7 +129,16 @@ export const salesService = {
   async getSaleStatistics() {
     const { data: salesData, error: salesError } = await supabase
       .from('sales')
-      .select('status, category, contract_value');
+      .select(`
+        status,
+        category,
+        contract_value,
+        commission_seller,
+        commission_partner,
+        operators:operator_id (
+          commission_visible_to_bo
+        )
+      `);
 
     if (salesError) throw salesError;
 
@@ -125,6 +150,12 @@ export const salesService = {
       lost: salesData.filter(s => s.status === 'perdido').length,
       cancelled: salesData.filter(s => s.status === 'anulado').length,
       totalValue: salesData.reduce((sum, s) => sum + (s.contract_value || 0), 0),
+      totalCommissionsSeller: salesData
+        .filter(s => s.operators?.commission_visible_to_bo)
+        .reduce((sum, s) => sum + (s.commission_seller || 0), 0),
+      totalCommissionsPartner: salesData
+        .filter(s => s.operators?.commission_visible_to_bo)
+        .reduce((sum, s) => sum + (s.commission_partner || 0), 0),
       byCategory: {
         energia: salesData.filter(s => s.category === 'energia').length,
         telecomunicacoes: salesData.filter(s => s.category === 'telecomunicacoes').length,

@@ -88,14 +88,16 @@ export default function SaleDetail({ editMode = false }) {
   const [editActiveDate, setEditActiveDate] = useState(null);
   const [editNotes, setEditNotes] = useState("");
   const [editReq, setEditReq] = useState("");
-  const [editCommission, setEditCommission] = useState("");
+  const [editCommissionSeller, setEditCommissionSeller] = useState("");
+  const [editCommissionPartner, setEditCommissionPartner] = useState("");
   const [isEditing, setIsEditing] = useState(editMode);
 
   const fetchSale = useCallback(async () => {
     try {
       const saleData = await salesService.getSaleById(id);
       setSale(saleData);
-      setEditCommission(saleData.commission?.toString() || "");
+      setEditCommissionSeller(saleData.commission_seller?.toString() || "");
+      setEditCommissionPartner(saleData.commission_partner?.toString() || "");
       setEditStatus(saleData.status || "");
       setEditNotes(saleData.notes || "");
       setEditReq(saleData.req || "");
@@ -124,12 +126,18 @@ export default function SaleDetail({ editMode = false }) {
         req: sale.category === "telecomunicacoes" ? editReq : null
       };
 
-      if (isAdminOrBackoffice && editCommission) {
-        const commissionValue = parseFloat(editCommission);
-        if (!isNaN(commissionValue)) {
-          payload.commission = commissionValue;
-          payload.commission_assigned_by = user?.name;
-          payload.commission_assigned_at = new Date().toISOString();
+      if (isAdminOrBackoffice && sale?.operators?.commission_visible_to_bo) {
+        if (editCommissionSeller) {
+          const commissionSellerValue = parseFloat(editCommissionSeller);
+          if (!isNaN(commissionSellerValue)) {
+            payload.commission_seller = commissionSellerValue;
+          }
+        }
+        if (editCommissionPartner) {
+          const commissionPartnerValue = parseFloat(editCommissionPartner);
+          if (!isNaN(commissionPartnerValue)) {
+            payload.commission_partner = commissionPartnerValue;
+          }
         }
       }
 
@@ -324,23 +332,51 @@ export default function SaleDetail({ editMode = false }) {
                 </div>
               )}
 
-              {/* Commission - editable by Admin/BO */}
-              {isAdminOrBackoffice && (
-                <div>
-                  <Label className="form-label flex items-center gap-2">
-                    <Euro size={14} className="text-[#c8f31d]" />
-                    Comissão (€)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={editCommission}
-                    onChange={(e) => setEditCommission(e.target.value)}
-                    className="form-input"
-                    placeholder="0.00"
-                    data-testid="edit-commission-input"
-                  />
+              {/* Commissions - editable by Admin/BO if operator allows */}
+              {isAdminOrBackoffice && sale?.operators?.commission_visible_to_bo && (
+                <>
+                  <div>
+                    <Label className="form-label flex items-center gap-2">
+                      <Euro size={14} className="text-[#c8f31d]" />
+                      Comissão Vendedor (€)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editCommissionSeller}
+                      onChange={(e) => setEditCommissionSeller(e.target.value)}
+                      className="form-input"
+                      placeholder="0.00"
+                      data-testid="edit-commission-seller-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="form-label flex items-center gap-2">
+                      <Euro size={14} className="text-[#c8f31d]" />
+                      Comissão Parceiro (€)
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editCommissionPartner}
+                      onChange={(e) => setEditCommissionPartner(e.target.value)}
+                      className="form-input"
+                      placeholder="0.00"
+                      data-testid="edit-commission-partner-input"
+                    />
+                  </div>
+                </>
+              )}
+              {isAdminOrBackoffice && sale?.operators && !sale.operators.commission_visible_to_bo && (
+                <div className="md:col-span-2">
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                    <p className="text-orange-400 text-sm flex items-center gap-2">
+                      <AlertTriangle size={16} />
+                      As comissões desta venda não são visíveis para o Backoffice. A operadora <strong>{sale.operators.name}</strong> tem comissões ocultas.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -419,23 +455,49 @@ export default function SaleDetail({ editMode = false }) {
               </div>
             )}
             
-            <div>
-              <p className="text-white/50 text-sm mb-1">Comissão</p>
-              {sale.commission !== null && sale.commission !== undefined ? (
+            {/* Commissions - only visible if operator allows */}
+            {sale.operators?.commission_visible_to_bo ? (
+              <>
                 <div>
-                  <p className="text-2xl font-bold text-green-400 font-mono">
-                    {formatCurrency(sale.commission)}
-                  </p>
-                  {sale.commission_assigned_by && (
-                    <p className="text-white/40 text-xs mt-1">
-                      Atribuída por {sale.commission_assigned_by}
+                  <p className="text-white/50 text-sm mb-1">Comissão Vendedor</p>
+                  {sale.commission_seller !== null && sale.commission_seller !== undefined ? (
+                    <p className="text-2xl font-bold text-green-400 font-mono">
+                      {formatCurrency(sale.commission_seller)}
                     </p>
+                  ) : (
+                    <p className="text-white/30">Não definida</p>
                   )}
                 </div>
-              ) : (
-                <p className="text-white/30">Não atribuída</p>
-              )}
-            </div>
+                <div>
+                  <p className="text-white/50 text-sm mb-1">Comissão Parceiro</p>
+                  {sale.commission_partner !== null && sale.commission_partner !== undefined ? (
+                    <p className="text-2xl font-bold text-green-400 font-mono">
+                      {formatCurrency(sale.commission_partner)}
+                    </p>
+                  ) : (
+                    <p className="text-white/30">Não definida</p>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-white/10">
+                  <p className="text-white/50 text-sm mb-1">Comissão Total</p>
+                  <p className="text-xl font-bold text-[#c8f31d] font-mono">
+                    {formatCurrency((sale.commission_seller || 0) + (sale.commission_partner || 0))}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                <p className="text-orange-400 text-sm flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  Comissões ocultas para o Backoffice
+                </p>
+                {sale.operators?.name && (
+                  <p className="text-white/40 text-xs mt-1">
+                    Operadora: {sale.operators.name}
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
