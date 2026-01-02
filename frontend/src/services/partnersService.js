@@ -26,14 +26,9 @@ export const partnersService = {
   },
 
   async createPartner(partnerData) {
-    const payload = {
-      ...partnerData,
-      must_change_password: true
-    };
-
     const { data, error } = await supabase
       .from('partners')
-      .insert([payload])
+      .insert([partnerData])
       .select()
       .single();
 
