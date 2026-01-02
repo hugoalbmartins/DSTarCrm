@@ -125,7 +125,7 @@ export default function Dashboard() {
             if (s.is_backoffice) {
               return sum + (s.commission_backoffice || 0);
             }
-            return sum + (s.commission_seller || 0) + (s.commission_partner || 0);
+            return sum + (s.commission_partner || 0);
           }, 0);
       };
 
@@ -136,7 +136,7 @@ export default function Dashboard() {
             if (s.is_backoffice) {
               return sum + (s.commission_backoffice || 0);
             }
-            return sum + (s.commission_seller || 0) + (s.commission_partner || 0);
+            return sum + (s.commission_partner || 0);
           }, 0);
       };
 
