@@ -81,34 +81,96 @@ Certifique-se de que o código está num repositório Git (GitHub, GitLab ou Bit
 
 ### Passo 2: Importar Projeto no Vercel
 
-1. Aceda a [vercel.com](https://vercel.com)
-2. Clique em "New Project"
-3. Importe o seu repositório
-4. O Vercel detectará automaticamente as configurações do `vercel.json`
+1. Aceda a [vercel.com](https://vercel.com) e faça login
+2. Clique em "Add New..." → "Project"
+3. Importe o seu repositório Git
+4. Configure o projeto:
+   - **Framework Preset:** Vite (será detetado automaticamente)
+   - **Root Directory:** `.` (deixar como está)
+   - **Build Command:** `cd frontend && npm install && npm run build`
+   - **Output Directory:** `frontend/dist`
 
-### Passo 3: Configurar Variáveis de Ambiente
+**NÃO CLIQUE EM DEPLOY AINDA!** Primeiro precisa configurar as variáveis de ambiente.
 
-No dashboard do Vercel, adicione as seguintes variáveis de ambiente:
+### Passo 3: Configurar Variáveis de Ambiente (CRÍTICO)
 
-```
-VITE_SUPABASE_URL=https://kzvzjrgmqneqygwfihzw.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dnpqcmdtcW5lcXlnd2ZpaHp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNTQ5NjAsImV4cCI6MjA4MjkzMDk2MH0.jTpjTMRtI1mM9eNrKTnLXeVKWEtkUFji_h7HAJyp4HI
-```
+**Este passo é obrigatório para o sistema funcionar!**
 
-**Importante:** Estas variáveis devem ser adicionadas na secção "Environment Variables" do projeto no Vercel.
+Antes de fazer deploy, tem de adicionar as variáveis de ambiente do Supabase:
+
+1. Na página de configuração do projeto no Vercel, encontre a secção **"Environment Variables"**
+2. Adicione **exatamente** estas 2 variáveis (copie e cole):
+
+**Variável 1:**
+- Name: `VITE_SUPABASE_URL`
+- Value: `https://kzvzjrgmqneqygwfihzw.supabase.co`
+- Environment: Production, Preview, Development (selecione todas)
+
+**Variável 2:**
+- Name: `VITE_SUPABASE_ANON_KEY`
+- Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6dnpqcmdtcW5lcXlnd2ZpaHp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNTQ5NjAsImV4cCI6MjA4MjkzMDk2MH0.jTpjTMRtI1mM9eNrKTnLXeVKWEtkUFji_h7HAJyp4HI`
+- Environment: Production, Preview, Development (selecione todas)
+
+**Nota:** Certifique-se de que os nomes das variáveis estão corretos, incluindo o prefixo `VITE_`.
 
 ### Passo 4: Deploy
 
-Clique em "Deploy" e aguarde a conclusão do build. O Vercel executará automaticamente:
-1. `npm install` na pasta frontend
-2. `npm run build` para gerar a build de produção
-3. Deploy dos ficheiros estáticos
+Agora pode clicar em "Deploy" e aguardar a conclusão (demora 2-3 minutos).
 
-### Notas Importantes
+### Passo 5: Verificar se Funcionou
 
-- O `vercel.json` está configurado para redirecionar todas as rotas para `/index.html` (necessário para o React Router)
-- As variáveis de ambiente devem ser prefixadas com `VITE_` para serem acessíveis no código frontend
-- Após o primeiro deploy, todos os pushes para a branch principal acionarão um deploy automático
+Após o deploy:
+1. Clique no link do projeto (ex: `https://seu-projeto.vercel.app`)
+2. Deverá ver a página de login do Leiritrix CRM
+3. Se vir uma página em branco ou erro, continue para a secção de resolução de problemas abaixo
+
+---
+
+## Resolução de Problemas
+
+### Erro: "API Key Invalid" ou Página em Branco
+
+**Causa:** As variáveis de ambiente não foram configuradas corretamente.
+
+**Solução:**
+
+1. Vá ao dashboard do Vercel → Selecione o seu projeto
+2. Clique em **"Settings"** (menu superior)
+3. No menu lateral, clique em **"Environment Variables"**
+4. Verifique se as 2 variáveis estão listadas:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+5. Se **NÃO** estiverem: adicione-as agora usando os valores do Passo 3
+6. Se **JÁ** estiverem: verifique se os valores estão corretos (copie novamente do Passo 3)
+7. Após adicionar/corrigir as variáveis, vá ao separador **"Deployments"**
+8. Clique nos 3 pontos (...) no último deployment
+9. Clique em **"Redeploy"** → Confirme **"Redeploy"**
+10. Aguarde 2-3 minutos e teste novamente
+
+### Erro: Página de Login Não Aparece (404 ou Página em Branco)
+
+**Causa:** Problema com as rotas do React Router.
+
+**Solução:**
+- Verifique se o arquivo `vercel.json` existe na raiz do projeto
+- O arquivo deve conter a configuração de rewrites
+- Se alterou o `vercel.json`, faça um novo commit e push para acionar um redeploy automático
+
+### Como Saber se as Variáveis Estão Carregadas
+
+Abra o console do browser (F12) e verifique:
+- Se vir "ERRO DE CONFIGURAÇÃO - Variáveis de ambiente Supabase não encontradas!" → As variáveis NÃO foram carregadas
+- Solução: Siga os passos da secção "Erro: API Key Invalid" acima
+
+---
+
+## Notas Importantes
+
+- O `vercel.json` está configurado para redirecionar todas as rotas para `/index.html` (necessário para o React Router funcionar)
+- As variáveis de ambiente devem ser prefixadas com `VITE_` para o Vite as injetar no código frontend
+- Após adicionar/modificar variáveis de ambiente, é **obrigatório** fazer redeploy
+- Todos os pushes para a branch principal acionarão um deploy automático
+- O primeiro deploy após configurar as variáveis pode demorar mais tempo
 
 ## Credenciais de Acesso
 
