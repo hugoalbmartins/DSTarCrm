@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { DateSelect } from "@/components/ui/date-select";
 import {
   Select,
   SelectContent,
@@ -22,14 +17,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { 
-  ArrowLeft, 
-  Edit2, 
-  Euro, 
-  User, 
-  Phone, 
+import {
+  ArrowLeft,
+  Edit2,
+  Euro,
+  User,
+  Phone,
   Mail,
   MapPin,
   FileText,
@@ -306,27 +299,12 @@ export default function SaleDetail({ editMode = false }) {
 
               <div>
                 <Label className="form-label">Data de Ativação</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="form-input w-full justify-start text-left font-normal"
-                      data-testid="edit-active-date"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 text-[#c8f31d]" />
-                      {editActiveDate ? format(editActiveDate, "dd/MM/yyyy") : "Selecionar data"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-[#082d32] border-white/10">
-                    <Calendar
-                      mode="single"
-                      selected={editActiveDate}
-                      onSelect={setEditActiveDate}
-                      locale={pt}
-                      className="bg-[#082d32]"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DateSelect
+                  value={editActiveDate}
+                  onChange={setEditActiveDate}
+                  placeholder="Selecionar data"
+                  data-testid="edit-active-date"
+                />
               </div>
 
               {/* REQ field only for telecom */}

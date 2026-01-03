@@ -6,12 +6,7 @@ import { partnersService } from "@/services/partnersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { DateSelect } from "@/components/ui/date-select";
 import {
   Select,
   SelectContent,
@@ -20,15 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { 
-  FileText, 
-  Download, 
-  Calendar as CalendarIcon,
+import {
+  FileText,
+  Download,
   Filter,
   Loader2
 } from "lucide-react";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
 
 const STATUS_MAP = {
   em_negociacao: { label: "Em Negociação", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
@@ -181,51 +173,19 @@ export default function Reports() {
         </CardHeader>
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Start Date */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="form-input justify-start text-left font-normal"
-                  data-testid="start-date-picker"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-[#c8f31d]" />
-                  {startDate ? format(startDate, "dd/MM/yyyy") : "Data início"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-[#082d32] border-white/10">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={setStartDate}
-                  locale={pt}
-                  className="bg-[#082d32]"
-                />
-              </PopoverContent>
-            </Popover>
+            <DateSelect
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Data início"
+              data-testid="start-date-picker"
+            />
 
-            {/* End Date */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="form-input justify-start text-left font-normal"
-                  data-testid="end-date-picker"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-[#c8f31d]" />
-                  {endDate ? format(endDate, "dd/MM/yyyy") : "Data fim"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-[#082d32] border-white/10">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={setEndDate}
-                  locale={pt}
-                  className="bg-[#082d32]"
-                />
-              </PopoverContent>
-            </Popover>
+            <DateSelect
+              value={endDate}
+              onChange={setEndDate}
+              placeholder="Data fim"
+              data-testid="end-date-picker"
+            />
 
             {/* Category */}
             <Select value={category} onValueChange={setCategory}>
