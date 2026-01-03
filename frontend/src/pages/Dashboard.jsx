@@ -214,10 +214,13 @@ export default function Dashboard() {
       }
 
       const expiringSoon = sales.filter(sale => {
-        if (sale.status !== 'ativo' || !sale.active_date) return false;
-        const activeDate = new Date(sale.active_date);
-        const monthsActive = (new Date() - activeDate) / (1000 * 60 * 60 * 24 * 30);
-        if (monthsActive < 11) return false;
+        if (sale.status !== 'ativo' || !sale.loyalty_end_date) return false;
+
+        const endDate = new Date(sale.loyalty_end_date);
+        const now = new Date();
+        const daysUntilEnd = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilEnd > 210 || daysUntilEnd < 0) return false;
 
         const hasRefidRenewal = sales.some(otherSale =>
           otherSale.id !== sale.id &&
