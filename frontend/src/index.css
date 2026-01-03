@@ -17,35 +17,35 @@ code {
 
 @layer base {
     :root {
-        --background: 187 72% 18%;
+        --background: 222 47% 11%;
         --foreground: 0 0% 100%;
-        --card: 187 72% 11%;
+        --card: 217 33% 17%;
         --card-foreground: 0 0% 100%;
-        --popover: 187 72% 11%;
+        --popover: 217 33% 17%;
         --popover-foreground: 0 0% 100%;
-        --primary: 74 88% 53%;
-        --primary-foreground: 187 72% 18%;
-        --secondary: 187 72% 14%;
+        --primary: 189 89% 43%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 217 33% 17%;
         --secondary-foreground: 0 0% 100%;
-        --muted: 187 72% 14%;
+        --muted: 217 33% 17%;
         --muted-foreground: 215 16% 57%;
-        --accent: 74 88% 53%;
-        --accent-foreground: 187 72% 18%;
+        --accent: 189 89% 43%;
+        --accent-foreground: 0 0% 100%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 100%;
-        --border: 74 88% 53% / 0.1;
-        --input: 187 72% 14%;
-        --ring: 74 88% 53%;
-        --chart-1: 74 88% 53%;
-        --chart-2: 173 58% 39%;
+        --border: 189 89% 43% / 0.1;
+        --input: 217 33% 17%;
+        --ring: 189 89% 43%;
+        --chart-1: 189 89% 43%;
+        --chart-2: 186 77% 43%;
         --chart-3: 197 37% 24%;
         --chart-4: 43 74% 66%;
         --chart-5: 27 87% 67%;
-        --radius: 0.3rem;
-        
-        --leiritrix-teal: #0d474f;
-        --leiritrix-teal-dark: #082d32;
-        --leiritrix-lime: #c8f31d;
+        --radius: 0.5rem;
+
+        --dolphin-cyan: #0BA5D9;
+        --dolphin-blue-dark: #164E63;
+        --dolphin-slate: #0F172A;
     }
 }
 
@@ -55,13 +55,13 @@ code {
     }
     body {
         @apply bg-background text-foreground;
-        background-color: #0d474f;
+        background-color: #0F172A;
     }
-    
+
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Manrope', sans-serif;
     }
-    
+
     .font-mono {
         font-family: 'JetBrains Mono', monospace;
     }
@@ -74,16 +74,16 @@ code {
 }
 
 ::-webkit-scrollbar-track {
-    background: #082d32;
+    background: #164E63;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #c8f31d33;
+    background: #0BA5D933;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #c8f31d66;
+    background: #0BA5D966;
 }
 
 /* Custom animations */
@@ -98,8 +98,8 @@ code {
 }
 
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 5px rgba(200, 243, 29, 0.3); }
-    50% { box-shadow: 0 0 20px rgba(200, 243, 29, 0.6); }
+    0%, 100% { box-shadow: 0 0 5px rgba(11, 165, 217, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(11, 165, 217, 0.6); }
 }
 
 .animate-fade-in {
@@ -136,31 +136,31 @@ code {
 }
 
 /* Card styles */
-.card-leiritrix {
-    background-color: #082d32;
-    border: 1px solid rgba(200, 243, 29, 0.1);
-    box-shadow: 0 4px 20px -2px rgba(13, 71, 79, 0.5);
+.card-dolphin {
+    background-color: #1E293B;
+    border: 1px solid rgba(11, 165, 217, 0.2);
+    box-shadow: 0 4px 20px -2px rgba(11, 165, 217, 0.1);
 }
 
 /* Button glow effect */
 .btn-primary-glow {
-    box-shadow: 0 0 10px rgba(200, 243, 29, 0.3);
+    box-shadow: 0 0 10px rgba(11, 165, 217, 0.3);
     transition: box-shadow 0.2s ease;
 }
 
 .btn-primary-glow:hover {
-    box-shadow: 0 0 20px rgba(200, 243, 29, 0.5);
+    box-shadow: 0 0 20px rgba(11, 165, 217, 0.5);
 }
 
 /* Alert card with left border */
 .alert-card {
-    border-left: 4px solid #c8f31d;
+    border-left: 4px solid #0BA5D9;
 }
 
 /* Glass effect */
 .glass {
     backdrop-filter: blur(12px);
-    background: rgba(8, 45, 50, 0.8);
+    background: rgba(15, 23, 42, 0.8);
 }
 
 /* Table row hover */
@@ -171,8 +171,8 @@ code {
 /* Input focus styles */
 input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: #c8f31d;
-    box-shadow: 0 0 0 2px rgba(200, 243, 29, 0.2);
+    border-color: #0BA5D9;
+    box-shadow: 0 0 0 2px rgba(11, 165, 217, 0.2);
 }
 
 @layer base {

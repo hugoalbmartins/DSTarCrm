@@ -1,6 +1,6 @@
-# Leiritrix CRM
+# Dolphin Star CRM
 
-Sistema de gestão de vendas para parceiros Leiritrix.
+Sistema de gestão de vendas para parceiros Dolphin Star - Consultadoria e Telecomunicações.
 
 ## Funcionalidades
 
@@ -121,7 +121,7 @@ Agora pode clicar em "Deploy" e aguardar a conclusão (demora 2-3 minutos).
 
 Após o deploy:
 1. Clique no link do projeto (ex: `https://seu-projeto.vercel.app`)
-2. Deverá ver a página de login do Leiritrix CRM
+2. Deverá ver a página de login do Dolphin Star CRM
 3. Se vir uma página em branco ou erro, continue para a secção de resolução de problemas abaixo
 
 ---
@@ -190,7 +190,7 @@ Abra o console do browser (F12) e verifique:
 ## Credenciais de Acesso
 
 **Administrador:**
-- Email: admin@leiritrix.com
-- Password: Admin123!@#
+- Email: admin@dstar.pt
+- Password: Crm2025*
 
 Este utilizador tem acesso total ao sistema incluindo gestão de utilizadores e parceiros.

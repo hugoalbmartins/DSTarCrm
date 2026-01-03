@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { authService } from "@/services/authService";
 
-const LOGO_URL = "/leiritrix.png";
+const LOGO_URL = "/cropped-logo_dolphinstar_horizontal-1.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -58,10 +58,10 @@ export default function Login() {
       <div className="login-card animate-fade-in">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <img 
-            src={LOGO_URL} 
-            alt="CRM Leiritrix" 
-            className="h-12"
+          <img
+            src={LOGO_URL}
+            alt="Dolphin Star CRM"
+            className="h-16 w-auto"
             data-testid="login-logo"
           />
         </div>
@@ -76,7 +76,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
           <div>
             <Label htmlFor="email" className="form-label flex items-center gap-2">
-              <Mail size={16} className="text-[#c8f31d]" />
+              <Mail size={16} className="text-[#0BA5D9]" />
               Email
             </Label>
             <Input
@@ -92,7 +92,7 @@ export default function Login() {
 
           <div>
             <Label htmlFor="password" className="form-label flex items-center gap-2">
-              <Lock size={16} className="text-[#c8f31d]" />
+              <Lock size={16} className="text-[#0BA5D9]" />
               Palavra-passe
             </Label>
             <Input

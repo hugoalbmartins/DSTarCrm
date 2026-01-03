@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/NotificationBell";
 
-const LOGO_URL = "/leiritrix.png";
+const LOGO_URL = "/cropped-logo_dolphinstar_horizontal-1.jpg";
 
 export const Layout = () => {
   const { user, logout, isAdmin, isAdminOrBackoffice } = useAuth();
@@ -42,8 +42,8 @@ export const Layout = () => {
 
   const getRoleBadge = (role) => {
     const badges = {
-      admin: { text: "Admin", class: "bg-[#c8f31d] text-[#0d474f]" },
-      backoffice: { text: "Backoffice", class: "bg-blue-500/20 text-blue-400 border border-blue-500/30" },
+      admin: { text: "Admin", class: "bg-[#0BA5D9] text-white" },
+      backoffice: { text: "Backoffice", class: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" },
       vendedor: { text: "Vendedor", class: "bg-white/10 text-white/70" }
     };
     return badges[role] || badges.vendedor;
@@ -52,11 +52,11 @@ export const Layout = () => {
   const badge = getRoleBadge(user?.role);
 
   return (
-    <div className="min-h-screen bg-[#0d474f]">
+    <div className="min-h-screen bg-[#0F172A]">
       {/* Mobile menu button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-[#082d32] text-white"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-[#1E293B] text-white"
         data-testid="mobile-menu-btn"
       >
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -66,10 +66,10 @@ export const Layout = () => {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''} lg:translate-x-0`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-[#c8f31d]/10">
-            <img 
-              src={LOGO_URL} 
-              alt="CRM Leiritrix" 
+          <div className="p-6 border-b border-[#0BA5D9]/20">
+            <img
+              src={LOGO_URL}
+              alt="Dolphin Star CRM"
               className="h-10 w-auto"
               data-testid="logo"
             />
@@ -95,7 +95,7 @@ export const Layout = () => {
           </nav>
 
           {/* User info */}
-          <div className="p-4 border-t border-[#c8f31d]/10">
+          <div className="p-4 border-t border-[#0BA5D9]/20">
             <div className="mb-4">
               <p className="text-white font-medium truncate">{user?.name}</p>
               <p className="text-white/50 text-sm truncate">{user?.email}</p>
@@ -122,7 +122,7 @@ export const Layout = () => {
         <div className="top-bar px-6 py-4 flex items-center justify-between">
           <div className="lg:hidden w-8"></div>
           <h1 className="text-xl font-bold text-white font-['Manrope']">
-            {navigation.find(item => isActive(item.href))?.name || "CRM Leiritrix"}
+            {navigation.find(item => isActive(item.href))?.name || "Dolphin Star CRM"}
           </h1>
           <div className="flex items-center gap-4">
             <NotificationBell userId={user?.id} />
