@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
   FileText,
   Download,
@@ -232,20 +233,22 @@ export default function Reports() {
               </SelectContent>
             </Select>
 
-            {/* Seller */}
-            <Select value={sellerId} onValueChange={setSellerId}>
-              <SelectTrigger className="form-input" data-testid="report-seller-filter">
-                <SelectValue placeholder="Vendedor" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#082d32] border-white/10">
-                <SelectItem value="all" className="text-white hover:bg-white/10">Todos</SelectItem>
-                {sellers.map((seller) => (
-                  <SelectItem key={seller.id} value={seller.id} className="text-white hover:bg-white/10">
-                    {seller.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Seller - only show if sellers exist */}
+            {sellers.length > 0 && (
+              <Select value={sellerId} onValueChange={setSellerId}>
+                <SelectTrigger className="form-input" data-testid="report-seller-filter">
+                  <SelectValue placeholder="Vendedor" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#082d32] border-white/10">
+                  <SelectItem value="all" className="text-white hover:bg-white/10">Todos</SelectItem>
+                  {sellers.map((seller) => (
+                    <SelectItem key={seller.id} value={seller.id} className="text-white hover:bg-white/10">
+                      {seller.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="flex justify-end mt-6">

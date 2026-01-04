@@ -3,6 +3,7 @@ import { useAuth } from "@/App";
 import { Link } from "react-router-dom";
 import { salesService } from "@/services/salesService";
 import { usersService } from "@/services/usersService";
+import { operatorsService } from "@/services/operatorsService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,9 @@ export default function Dashboard() {
   const [monthlyStats, setMonthlyStats] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasSellers, setHasSellers] = useState(false);
+  const [hasHiddenOperators, setHasHiddenOperators] = useState(false);
+  const [sellerStats, setSellerStats] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -72,6 +76,45 @@ export default function Dashboard() {
     try {
       const stats = await salesService.getSaleStatistics();
       const sales = await salesService.getSales();
+
+      const sellers = await usersService.getUsersByRole('vendedor');
+      const operators = await operatorsService.getOperators();
+
+      setHasSellers(sellers.length > 0);
+
+      const hasHiddenOps = operators.some(op => !op.commission_visible_to_bo) &&
+        sales.some(s => s.operators && !s.operators.commission_visible_to_bo);
+      setHasHiddenOperators(hasHiddenOps);
+
+      if (sellers.length > 0) {
+        const sellerStatsData = sellers.map(seller => {
+          const sellerSales = sales.filter(s => s.seller_id === seller.id);
+
+          const operatorBreakdown = {};
+          sellerSales.forEach(sale => {
+            const opName = sale.operators?.name || 'Sem Operadora';
+            if (!operatorBreakdown[opName]) {
+              operatorBreakdown[opName] = 0;
+            }
+            operatorBreakdown[opName]++;
+          });
+
+          const totalCommissionPredicted = sellerSales.reduce((sum, s) => sum + (s.commission_seller || 0), 0);
+          const totalCommissionActive = sellerSales
+            .filter(s => s.status === 'ativo')
+            .reduce((sum, s) => sum + (s.commission_seller || 0), 0);
+
+          return {
+            sellerId: seller.id,
+            sellerName: seller.name,
+            operatorBreakdown,
+            totalSales: sellerSales.length,
+            totalCommissionPredicted,
+            totalCommissionActive
+          };
+        });
+        setSellerStats(sellerStatsData);
+      }
 
       let currentUserData = null;
       if (user.role === 'backoffice') {
@@ -333,51 +376,55 @@ export default function Dashboard() {
 
         {user.role === 'admin' ? (
           <>
-            <Card className="metric-card" data-testid="metric-seller-commissions">
-              <CardContent className="p-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="metric-value font-mono text-xl">
-                      {formatCurrency(metrics?.seller_commissions)}
-                    </p>
-                    <p className="metric-label">
-                      Comissões Vendedores
-                      {metrics?.seller_commissions_yoy !== undefined && (
-                        <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.seller_commissions_yoy)}`}>
-                          {formatPercentage(metrics.seller_commissions_yoy)} vs ano anterior
-                        </span>
-                      )}
-                    </p>
+            {hasSellers && (
+              <Card className="metric-card" data-testid="metric-seller-commissions">
+                <CardContent className="p-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="metric-value font-mono text-xl">
+                        {formatCurrency(metrics?.seller_commissions)}
+                      </p>
+                      <p className="metric-label">
+                        Comissões Vendedores
+                        {metrics?.seller_commissions_yoy !== undefined && (
+                          <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.seller_commissions_yoy)}`}>
+                            {formatPercentage(metrics.seller_commissions_yoy)} vs ano anterior
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-purple-500/10 p-2 rounded-lg">
+                      <Users className="text-purple-400" size={20} />
+                    </div>
                   </div>
-                  <div className="bg-purple-500/10 p-2 rounded-lg">
-                    <Users className="text-purple-400" size={20} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            <Card className="metric-card" data-testid="metric-non-visible-commissions">
-              <CardContent className="p-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="metric-value font-mono text-xl">
-                      {formatCurrency(metrics?.non_visible_commissions)}
-                    </p>
-                    <p className="metric-label">
-                      Comissões Operadoras Ocultas
-                      {metrics?.non_visible_commissions_yoy !== undefined && (
-                        <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.non_visible_commissions_yoy)}`}>
-                          {formatPercentage(metrics.non_visible_commissions_yoy)} vs ano anterior
-                        </span>
-                      )}
-                    </p>
+            {hasHiddenOperators && (
+              <Card className="metric-card" data-testid="metric-non-visible-commissions">
+                <CardContent className="p-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="metric-value font-mono text-xl">
+                        {formatCurrency(metrics?.non_visible_commissions)}
+                      </p>
+                      <p className="metric-label">
+                        Comissões Operadoras Ocultas
+                        {metrics?.non_visible_commissions_yoy !== undefined && (
+                          <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.non_visible_commissions_yoy)}`}>
+                            {formatPercentage(metrics.non_visible_commissions_yoy)} vs ano anterior
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-gray-500/10 p-2 rounded-lg">
+                      <EyeOff className="text-gray-400" size={20} />
+                    </div>
                   </div>
-                  <div className="bg-gray-500/10 p-2 rounded-lg">
-                    <EyeOff className="text-gray-400" size={20} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </>
         ) : user.role === 'backoffice' ? (
           <>
@@ -753,6 +800,60 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Seller Stats Table - Only for admin and if sellers exist */}
+      {user.role === 'admin' && hasSellers && sellerStats.length > 0 && (
+        <Card className="card-leiritrix">
+          <CardHeader className="border-b border-white/5 pb-4">
+            <CardTitle className="text-white font-['Manrope'] text-lg flex items-center gap-2">
+              <Users className="text-[#c8f31d]" size={20} />
+              Vendas por Vendedor
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Vendedor</th>
+                    <th>Total Vendas</th>
+                    <th>Por Operadora</th>
+                    <th>Comissões Previstas</th>
+                    <th>Comissões Ativas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sellerStats.map((seller) => (
+                    <tr key={seller.sellerId} className="table-row-hover">
+                      <td>
+                        <span className="text-white font-medium">{seller.sellerName}</span>
+                      </td>
+                      <td>
+                        <span className="text-[#c8f31d] font-mono font-bold">{seller.totalSales}</span>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(seller.operatorBreakdown).map(([opName, count]) => (
+                            <Badge key={opName} className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                              {opName}: {count}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="text-yellow-400 font-mono">{formatCurrency(seller.totalCommissionPredicted)}</span>
+                      </td>
+                      <td>
+                        <span className="text-green-400 font-mono font-bold">{formatCurrency(seller.totalCommissionActive)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
