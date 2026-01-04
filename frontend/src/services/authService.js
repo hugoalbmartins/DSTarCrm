@@ -73,6 +73,40 @@ export const authService = {
     throw new Error('Failed to create user');
   },
 
+  async createUserAdmin(email, password, userData) {
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`;
+
+    const headers = {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    };
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        email,
+        password,
+        userData: {
+          email,
+          name: userData.name,
+          role: userData.role || 'vendedor',
+          must_change_password: true,
+          commission_percentage: userData.commission_percentage,
+          commission_threshold: userData.commission_threshold,
+        }
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Erro ao criar utilizador');
+    }
+
+    return data;
+  },
+
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;

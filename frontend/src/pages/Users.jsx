@@ -160,7 +160,7 @@ export default function Users() {
         setUsers(users.map(u => u.id === editingUser.id ? updated : u));
         toast.success("Utilizador atualizado");
       } else {
-        const { user: newUser } = await authService.signUp(
+        const { user: newUser } = await authService.createUserAdmin(
           formData.email,
           formData.password,
           {
@@ -172,7 +172,7 @@ export default function Users() {
           }
         );
         setUsers([...users, newUser]);
-        toast.success("Utilizador criado");
+        toast.success("Utilizador criado com sucesso");
       }
 
       setModalOpen(false);
