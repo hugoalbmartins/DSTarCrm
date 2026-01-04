@@ -159,6 +159,45 @@ export const salesService = {
     return data;
   },
 
+  async getSalesByNif(nif) {
+    const { data, error } = await supabase
+      .from('sales')
+      .select(`
+        *,
+        operators:operator_id (
+          id,
+          name,
+          allowed_sale_types
+        ),
+        sellers:seller_id (
+          id,
+          name,
+          active
+        ),
+        partners:partner_id (
+          id,
+          name
+        )
+      `)
+      .eq('client_nif', nif)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async cancelSaleLoyaltyAlerts(saleId) {
+    const { data, error } = await supabase
+      .from('sales')
+      .update({ loyalty_months: 0, loyalty_end_date: null })
+      .eq('id', saleId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async getSaleStatistics() {
     const { data: salesData, error: salesError } = await supabase
       .from('sales')

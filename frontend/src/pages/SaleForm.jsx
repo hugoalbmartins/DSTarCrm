@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Loader2, User, FileText, Zap, Phone as PhoneIcon } from "lucide-react";
+import { ArrowLeft, Save, Loader2, User, FileText, Zap, Phone as PhoneIcon, ArrowRight, Home, Plus } from "lucide-react";
 
 const CATEGORIES = [
   { value: "energia", label: "Energia" },
@@ -79,6 +79,14 @@ export default function SaleForm() {
   const [originalAddress, setOriginalAddress] = useState(null);
   const [showAddressChangeDialog, setShowAddressChangeDialog] = useState(false);
 
+  const [nifStep, setNifStep] = useState(true);
+  const [nifInput, setNifInput] = useState("");
+  const [checkingNif, setCheckingNif] = useState(false);
+  const [previousSales, setPreviousSales] = useState([]);
+  const [showSaleTypeDialog, setShowSaleTypeDialog] = useState(false);
+  const [showAddressSelectionDialog, setShowAddressSelectionDialog] = useState(false);
+  const [selectedSaleFlow, setSelectedSaleFlow] = useState(null);
+
   const [formData, setFormData] = useState({
     client_name: "",
     client_email: "",
@@ -111,6 +119,7 @@ export default function SaleForm() {
     fetchSellers();
     const refidFrom = searchParams.get('refid_from');
     if (refidFrom) {
+      setNifStep(false);
       loadRefidData(refidFrom);
     }
   }, [searchParams]);
@@ -246,6 +255,124 @@ export default function SaleForm() {
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNifCheck = async () => {
+    if (!nifInput) {
+      toast.error("Insira um NIF");
+      return;
+    }
+
+    if (nifInput.length !== 9 || !/^\d+$/.test(nifInput)) {
+      toast.error("O NIF deve ter 9 dígitos numéricos");
+      return;
+    }
+
+    setCheckingNif(true);
+    try {
+      const sales = await salesService.getSalesByNif(nifInput);
+
+      if (sales && sales.length > 0) {
+        setPreviousSales(sales);
+        setShowSaleTypeDialog(true);
+      } else {
+        setFormData(prev => ({ ...prev, client_nif: nifInput }));
+        setNifStep(false);
+        toast.info("Novo cliente - preencha todos os dados");
+      }
+    } catch (error) {
+      console.error("Error checking NIF:", error);
+      toast.error("Erro ao verificar NIF");
+    } finally {
+      setCheckingNif(false);
+    }
+  };
+
+  const handleNewSale = () => {
+    const latestSale = previousSales[0];
+
+    setFormData(prev => ({
+      ...prev,
+      client_nif: nifInput,
+      client_name: latestSale.client_name || "",
+      client_email: latestSale.client_email || "",
+      client_phone: latestSale.client_phone || "",
+      street_address: "",
+      postal_code: "",
+      city: ""
+    }));
+
+    setShowSaleTypeDialog(false);
+    setNifStep(false);
+    toast.info("Preencha os dados da nova venda");
+  };
+
+  const handleMudancaCasaFlow = () => {
+    setSelectedSaleFlow('mudanca_casa');
+    setShowSaleTypeDialog(false);
+    setShowAddressSelectionDialog(true);
+  };
+
+  const handleRefidFlow = () => {
+    setSelectedSaleFlow('refid');
+    setShowSaleTypeDialog(false);
+    setShowAddressSelectionDialog(true);
+  };
+
+  const handleAddressSelection = async (selectedSale) => {
+    try {
+      await salesService.cancelSaleLoyaltyAlerts(selectedSale.id);
+
+      const isMudancaCasa = selectedSaleFlow === 'mudanca_casa';
+      const saleType = isMudancaCasa ? 'mudanca_casa' : 'refid';
+
+      const operatorAllowsSaleType = selectedSale.operators?.allowed_sale_types?.includes(saleType);
+
+      if (!operatorAllowsSaleType && selectedSale.operators) {
+        toast.warning(`A operadora ${selectedSale.operators.name} não permite vendas do tipo ${isMudancaCasa ? 'Mudança de Casa' : 'Refid'}`);
+      }
+
+      const validSeller = selectedSale.sellers?.active ? selectedSale.seller_id : "none";
+
+      setFormData(prev => ({
+        ...prev,
+        client_nif: nifInput,
+        client_name: selectedSale.client_name || "",
+        client_email: selectedSale.client_email || "",
+        client_phone: selectedSale.client_phone || "",
+        street_address: isMudancaCasa ? "" : (selectedSale.street_address || ""),
+        postal_code: isMudancaCasa ? "" : (selectedSale.postal_code || ""),
+        city: isMudancaCasa ? "" : (selectedSale.city || ""),
+        category: selectedSale.category || "",
+        sale_type: operatorAllowsSaleType ? saleType : "",
+        partner_id: selectedSale.partner_id || "",
+        operator_id: operatorAllowsSaleType ? selectedSale.operator_id : "",
+        seller_id: validSeller,
+        loyalty_months: selectedSale.loyalty_months?.toString() || "",
+        energy_type: selectedSale.energy_type || "",
+        cpe: selectedSale.cpe || "",
+        potencia: selectedSale.potencia || "",
+        cui: selectedSale.cui || "",
+        escalao: selectedSale.escalao || ""
+      }));
+
+      if (isMudancaCasa) {
+        setOriginalAddress({
+          street_address: selectedSale.street_address || "",
+          postal_code: selectedSale.postal_code || "",
+          city: selectedSale.city || ""
+        });
+      }
+
+      setShowAddressSelectionDialog(false);
+      setNifStep(false);
+
+      const flowName = isMudancaCasa ? "Mudança de Casa" : "Refid";
+      toast.success(`Dados carregados para ${flowName}`);
+    } catch (error) {
+      console.error("Error loading sale data:", error);
+      toast.error("Erro ao carregar dados da venda");
+    }
   };
 
   const checkAddressChange = () => {
@@ -406,14 +533,70 @@ export default function SaleForm() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-white font-['Manrope']">Nova Venda</h1>
-          <p className="text-white/50 text-sm mt-1">Preencha os dados para registar uma nova venda</p>
+          <p className="text-white/50 text-sm mt-1">
+            {nifStep ? "Insira o NIF do cliente para começar" : "Preencha os dados para registar uma nova venda"}
+          </p>
         </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} data-testid="sale-form">
-        {/* Client Data */}
+      {/* NIF Step */}
+      {nifStep && (
         <Card className="card-leiritrix">
+          <CardContent className="p-8">
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 rounded-full bg-[#c8f31d]/20 flex items-center justify-center mx-auto">
+                <User size={32} className="text-[#c8f31d]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white mb-2">NIF do Cliente</h2>
+                <p className="text-white/60 text-sm">
+                  Insira o NIF para verificar se o cliente já tem vendas registadas
+                </p>
+              </div>
+              <div className="max-w-md mx-auto">
+                <Input
+                  value={nifInput}
+                  onChange={(e) => setNifInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !checkingNif) {
+                      handleNifCheck();
+                    }
+                  }}
+                  className="form-input text-center text-lg"
+                  placeholder="123456789"
+                  maxLength={9}
+                  autoFocus
+                  data-testid="nif-input"
+                />
+              </div>
+              <Button
+                onClick={handleNifCheck}
+                disabled={checkingNif || !nifInput}
+                className="btn-primary btn-primary-glow"
+                data-testid="check-nif-btn"
+              >
+                {checkingNif ? (
+                  <>
+                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    A verificar...
+                  </>
+                ) : (
+                  <>
+                    IR
+                    <ArrowRight size={18} className="ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Form */}
+      {!nifStep && (
+        <form onSubmit={handleSubmit} data-testid="sale-form">
+          {/* Client Data */}
+          <Card className="card-leiritrix">
           <CardHeader className="border-b border-white/5 pb-4">
             <CardTitle className="text-white font-['Manrope'] text-lg flex items-center gap-2">
               <User size={20} className="text-[#c8f31d]" />
@@ -892,6 +1075,112 @@ export default function SaleForm() {
           </Button>
         </div>
       </form>
+      )}
+
+      {/* Sale Type Selection Dialog */}
+      <AlertDialog open={showSaleTypeDialog} onOpenChange={setShowSaleTypeDialog}>
+        <AlertDialogContent className="bg-[#082d32] border-[#c8f31d]/30 max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Cliente Existente</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              Encontrámos {previousSales.length} venda(s) para este NIF. Que tipo de venda pretende registar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-4">
+            <Button
+              onClick={handleNewSale}
+              className="w-full bg-green-600 hover:bg-green-700 text-white justify-start"
+              data-testid="new-sale-btn"
+            >
+              <Plus size={18} className="mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Nova Venda</div>
+                <div className="text-xs opacity-80">Nova morada e contrato</div>
+              </div>
+            </Button>
+            <Button
+              onClick={handleMudancaCasaFlow}
+              className="w-full bg-[#c8f31d] hover:bg-[#d4ff3d] text-[#0d474f] justify-start"
+              data-testid="mc-flow-btn"
+            >
+              <Home size={18} className="mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Mudança de Casa (MC)</div>
+                <div className="text-xs opacity-80">Cliente muda de morada</div>
+              </div>
+            </Button>
+            <Button
+              onClick={handleRefidFlow}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start"
+              data-testid="refid-flow-btn"
+            >
+              <FileText size={18} className="mr-2" />
+              <div className="text-left">
+                <div className="font-semibold">Refid (Renovação)</div>
+                <div className="text-xs opacity-80">Renovação na mesma morada</div>
+              </div>
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="bg-white/10 text-white hover:bg-white/20"
+              onClick={() => {
+                setShowSaleTypeDialog(false);
+                setPreviousSales([]);
+              }}
+            >
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Address Selection Dialog */}
+      <AlertDialog open={showAddressSelectionDialog} onOpenChange={setShowAddressSelectionDialog}>
+        <AlertDialogContent className="bg-[#082d32] border-[#c8f31d]/30 max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Selecione a Morada {selectedSaleFlow === 'mudanca_casa' ? 'Original' : 'para Renovação'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              {selectedSaleFlow === 'mudanca_casa'
+                ? 'Qual a morada original do cliente antes da mudança?'
+                : 'Qual a morada que pretende renovar?'
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-4 max-h-96 overflow-y-auto">
+            {previousSales.map((sale) => (
+              <Button
+                key={sale.id}
+                onClick={() => handleAddressSelection(sale)}
+                className="w-full bg-[#0d474f] hover:bg-[#0d474f]/80 text-white justify-start p-4 h-auto"
+                data-testid={`address-option-${sale.id}`}
+              >
+                <div className="flex-1 text-left">
+                  <div className="font-semibold">{sale.street_address}</div>
+                  <div className="text-sm opacity-80">{sale.postal_code} {sale.city}</div>
+                  <div className="text-xs opacity-60 mt-1">
+                    {sale.operators?.name} • {sale.category === 'energia' ? 'Energia' : sale.category === 'telecomunicacoes' ? 'Telecomunicações' : 'Painéis Solares'}
+                    {sale.loyalty_months > 0 && ` • ${sale.loyalty_months} meses fidelização`}
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="bg-white/10 text-white hover:bg-white/20"
+              onClick={() => {
+                setShowAddressSelectionDialog(false);
+                setShowSaleTypeDialog(true);
+              }}
+            >
+              Voltar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Address Change Dialog */}
       <AlertDialog open={showAddressChangeDialog} onOpenChange={setShowAddressChangeDialog}>
