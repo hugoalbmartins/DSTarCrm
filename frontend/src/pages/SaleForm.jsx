@@ -346,7 +346,7 @@ export default function SaleForm() {
         category: selectedSale.category || "",
         sale_type: operatorAllowsSaleType ? saleType : "",
         partner_id: selectedSale.partner_id || "",
-        operator_id: operatorAllowsSaleType ? selectedSale.operator_id : "",
+        operator_id: selectedSale.operator_id || "",
         seller_id: validSeller,
         loyalty_months: selectedSale.loyalty_months?.toString() || "",
         energy_type: selectedSale.energy_type || "",
