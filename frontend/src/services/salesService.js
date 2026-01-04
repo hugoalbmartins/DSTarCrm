@@ -11,6 +11,14 @@ export const salesService = {
           id,
           name,
           commission_visible_to_bo
+        ),
+        sellers:seller_id (
+          id,
+          name
+        ),
+        partners:partner_id (
+          id,
+          name
         )
       `);
 
@@ -33,7 +41,15 @@ export const salesService = {
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+
+    return data.map(sale => ({
+      ...sale,
+      seller_name: sale.sellers?.name || 'Sem vendedor',
+      partner_name: sale.partners?.name || 'Sem parceiro',
+      days_until_end: sale.loyalty_end_date ?
+        Math.max(0, Math.ceil((new Date(sale.loyalty_end_date) - new Date()) / (1000 * 60 * 60 * 24))) :
+        null
+    }));
   },
 
   async getSaleById(saleId) {
@@ -45,13 +61,30 @@ export const salesService = {
           id,
           name,
           commission_visible_to_bo
+        ),
+        sellers:seller_id (
+          id,
+          name
+        ),
+        partners:partner_id (
+          id,
+          name
         )
       `)
       .eq('id', saleId)
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    if (!data) return null;
+
+    return {
+      ...data,
+      seller_name: data.sellers?.name || 'Sem vendedor',
+      partner_name: data.partners?.name || 'Sem parceiro',
+      days_until_end: data.loyalty_end_date ?
+        Math.max(0, Math.ceil((new Date(data.loyalty_end_date) - new Date()) / (1000 * 60 * 60 * 24))) :
+        null
+    };
   },
 
   async createSale(saleData) {
@@ -160,6 +193,13 @@ export const salesService = {
         energia: salesData.filter(s => s.category === 'energia').length,
         telecomunicacoes: salesData.filter(s => s.category === 'telecomunicacoes').length,
         paineis_solares: salesData.filter(s => s.category === 'paineis_solares').length,
+      },
+      byStatus: {
+        em_negociacao: salesData.filter(s => s.status === 'em_negociacao').length,
+        pendente: salesData.filter(s => s.status === 'pendente').length,
+        ativo: salesData.filter(s => s.status === 'ativo').length,
+        perdido: salesData.filter(s => s.status === 'perdido').length,
+        anulado: salesData.filter(s => s.status === 'anulado').length,
       },
     };
 

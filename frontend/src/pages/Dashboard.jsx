@@ -137,20 +137,20 @@ export default function Dashboard() {
           .reduce((sum, s) => sum + (s.commission_partner || 0), 0);
       };
 
-      const calcPartnerCommissions = (salesList) => {
+      const calcOperatorCommissions = (salesList) => {
         return salesList
           .filter(s => s.operators?.commission_visible_to_bo)
           .reduce((sum, s) => sum + (s.commission_partner || 0), 0);
       };
 
-      const calcPartnerCommissionsActive = (salesList) => {
+      const calcOperatorCommissionsActive = (salesList) => {
         return salesList
           .filter(s => s.status === 'ativo' && s.operators?.commission_visible_to_bo)
           .reduce((sum, s) => sum + (s.commission_partner || 0), 0);
       };
 
       const calcBackofficeCommission = (salesList, percentage, threshold) => {
-        const visibleCommissions = calcPartnerCommissions(salesList);
+        const visibleCommissions = calcOperatorCommissions(salesList);
         if (visibleCommissions < (threshold || 0)) {
           return 0;
         }
@@ -174,19 +174,19 @@ export default function Dashboard() {
         const currentMonthNonVisibleCommissions = calcNonVisibleOperatorCommissions(currentMonthSales);
         const lastYearNonVisibleCommissions = calcNonVisibleOperatorCommissions(lastYearSameMonthSales);
 
-        const currentMonthPartnerCommissions = calcPartnerCommissions(currentMonthSales);
-        const lastYearPartnerCommissions = calcPartnerCommissions(lastYearSameMonthSales);
+        const currentMonthOperatorCommissions = calcOperatorCommissions(currentMonthSales);
+        const lastYearOperatorCommissions = calcOperatorCommissions(lastYearSameMonthSales);
 
-        const currentMonthActiveCommissions = calcPartnerCommissionsActive(currentMonthSales);
-        const lastYearActiveCommissions = calcPartnerCommissionsActive(lastYearSameMonthSales);
+        const currentMonthActiveCommissions = calcOperatorCommissionsActive(currentMonthSales);
+        const lastYearActiveCommissions = calcOperatorCommissionsActive(lastYearSameMonthSales);
 
         metricsData = {
           seller_commissions: currentMonthSellerCommissions,
           seller_commissions_yoy: calcPercentageChange(currentMonthSellerCommissions, lastYearSellerCommissions),
           non_visible_commissions: currentMonthNonVisibleCommissions,
           non_visible_commissions_yoy: calcPercentageChange(currentMonthNonVisibleCommissions, lastYearNonVisibleCommissions),
-          partner_commissions: currentMonthPartnerCommissions,
-          partner_commissions_yoy: calcPercentageChange(currentMonthPartnerCommissions, lastYearPartnerCommissions),
+          operator_commissions: currentMonthOperatorCommissions,
+          operator_commissions_yoy: calcPercentageChange(currentMonthOperatorCommissions, lastYearOperatorCommissions),
           active_commissions: currentMonthActiveCommissions,
           active_commissions_yoy: calcPercentageChange(currentMonthActiveCommissions, lastYearActiveCommissions),
         };
@@ -197,19 +197,31 @@ export default function Dashboard() {
         const currentMonthBoCommission = calcBackofficeCommission(currentMonthSales, percentage, threshold);
         const lastYearBoCommission = calcBackofficeCommission(lastYearSameMonthSales, percentage, threshold);
 
-        const currentMonthPartnerCommissions = calcPartnerCommissions(currentMonthSales);
-        const lastYearPartnerCommissions = calcPartnerCommissions(lastYearSameMonthSales);
+        const currentMonthOperatorCommissions = calcOperatorCommissions(currentMonthSales);
+        const lastYearOperatorCommissions = calcOperatorCommissions(lastYearSameMonthSales);
 
-        const currentMonthActiveCommissions = calcPartnerCommissionsActive(currentMonthSales);
-        const lastYearActiveCommissions = calcPartnerCommissionsActive(lastYearSameMonthSales);
+        const currentMonthActiveCommissions = calcOperatorCommissionsActive(currentMonthSales);
+        const lastYearActiveCommissions = calcOperatorCommissionsActive(lastYearSameMonthSales);
 
         metricsData = {
           backoffice_commission: currentMonthBoCommission,
           backoffice_commission_yoy: calcPercentageChange(currentMonthBoCommission, lastYearBoCommission),
-          partner_commissions: currentMonthPartnerCommissions,
-          partner_commissions_yoy: calcPercentageChange(currentMonthPartnerCommissions, lastYearPartnerCommissions),
+          operator_commissions: currentMonthOperatorCommissions,
+          operator_commissions_yoy: calcPercentageChange(currentMonthOperatorCommissions, lastYearOperatorCommissions),
           active_commissions: currentMonthActiveCommissions,
           active_commissions_yoy: calcPercentageChange(currentMonthActiveCommissions, lastYearActiveCommissions),
+        };
+      } else if (user.role === 'vendedor') {
+        const currentMonthSellerCommissions = currentMonthSales
+          .filter(s => s.seller_id === user.id)
+          .reduce((sum, s) => sum + (s.commission_seller || 0), 0);
+        const lastYearSellerCommissions = lastYearSameMonthSales
+          .filter(s => s.seller_id === user.id)
+          .reduce((sum, s) => sum + (s.commission_seller || 0), 0);
+
+        metricsData = {
+          seller_commissions: currentMonthSellerCommissions,
+          seller_commissions_yoy: calcPercentageChange(currentMonthSellerCommissions, lastYearSellerCommissions),
         };
       }
 
@@ -392,18 +404,18 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="metric-card" data-testid="metric-partner-commissions">
+            <Card className="metric-card" data-testid="metric-operator-commissions">
               <CardContent className="p-0">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="metric-value font-mono text-xl">
-                      {formatCurrency(metrics?.partner_commissions)}
+                      {formatCurrency(metrics?.operator_commissions)}
                     </p>
                     <p className="metric-label">
-                      Comissões Parceiros
-                      {metrics?.partner_commissions_yoy !== undefined && (
-                        <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.partner_commissions_yoy)}`}>
-                          {formatPercentage(metrics.partner_commissions_yoy)} vs ano anterior
+                      Comissões Operadoras
+                      {metrics?.operator_commissions_yoy !== undefined && (
+                        <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.operator_commissions_yoy)}`}>
+                          {formatPercentage(metrics.operator_commissions_yoy)} vs ano anterior
                         </span>
                       )}
                     </p>
@@ -415,24 +427,47 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </>
+        ) : user.role === 'vendedor' ? (
+          <Card className="metric-card" data-testid="metric-seller-commissions">
+            <CardContent className="p-0">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="metric-value font-mono text-xl text-[#c8f31d]">
+                    {formatCurrency(metrics?.seller_commissions)}
+                  </p>
+                  <p className="metric-label">
+                    Minhas Comissões
+                    {metrics?.seller_commissions_yoy !== undefined && (
+                      <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.seller_commissions_yoy)}`}>
+                        {formatPercentage(metrics.seller_commissions_yoy)} vs ano anterior
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="bg-[#c8f31d]/10 p-2 rounded-lg">
+                  <Euro className="text-[#c8f31d]" size={20} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ) : null}
       </div>
 
       {/* Second row for admin - partner and active commissions */}
       {user.role === 'admin' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="metric-card" data-testid="metric-partner-commissions">
+          <Card className="metric-card" data-testid="metric-operator-commissions">
             <CardContent className="p-0">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="metric-value font-mono text-xl">
-                    {formatCurrency(metrics?.partner_commissions)}
+                    {formatCurrency(metrics?.operator_commissions)}
                   </p>
                   <p className="metric-label">
-                    Comissões Parceiros (Visíveis)
-                    {metrics?.partner_commissions_yoy !== undefined && (
-                      <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.partner_commissions_yoy)}`}>
-                        {formatPercentage(metrics.partner_commissions_yoy)} vs ano anterior
+                    Comissões Operadoras (Visíveis)
+                    {metrics?.operator_commissions_yoy !== undefined && (
+                      <span className={`block mt-1 text-xs font-mono ${getPercentageColor(metrics.operator_commissions_yoy)}`}>
+                        {formatPercentage(metrics.operator_commissions_yoy)} vs ano anterior
                       </span>
                     )}
                   </p>

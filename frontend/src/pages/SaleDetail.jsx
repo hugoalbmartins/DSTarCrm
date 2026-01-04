@@ -343,26 +343,28 @@ export default function SaleDetail({ editMode = false }) {
                     </div>
                   ) : (
                     <>
+                      {sale.seller_id && (
+                        <div>
+                          <Label className="form-label flex items-center gap-2">
+                            <Euro size={14} className="text-[#c8f31d]" />
+                            Comissão Vendedor (€)
+                          </Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editCommissionSeller}
+                            onChange={(e) => setEditCommissionSeller(e.target.value)}
+                            className="form-input"
+                            placeholder="0.00"
+                            data-testid="edit-commission-seller-input"
+                          />
+                        </div>
+                      )}
                       <div>
                         <Label className="form-label flex items-center gap-2">
                           <Euro size={14} className="text-[#c8f31d]" />
-                          Comissão Vendedor (€)
-                        </Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={editCommissionSeller}
-                          onChange={(e) => setEditCommissionSeller(e.target.value)}
-                          className="form-input"
-                          placeholder="0.00"
-                          data-testid="edit-commission-seller-input"
-                        />
-                      </div>
-                      <div>
-                        <Label className="form-label flex items-center gap-2">
-                          <Euro size={14} className="text-[#c8f31d]" />
-                          Comissão Parceiro (€)
+                          Comissão Operadora (€)
                         </Label>
                         <Input
                           type="number"
@@ -481,18 +483,20 @@ export default function SaleDetail({ editMode = false }) {
                   </div>
                 ) : (
                   <>
+                    {sale.seller_id && (
+                      <div>
+                        <p className="text-white/50 text-sm mb-1">Comissão Vendedor</p>
+                        {sale.commission_seller !== null && sale.commission_seller !== undefined ? (
+                          <p className="text-2xl font-bold text-green-400 font-mono">
+                            {formatCurrency(sale.commission_seller)}
+                          </p>
+                        ) : (
+                          <p className="text-white/30">Não definida</p>
+                        )}
+                      </div>
+                    )}
                     <div>
-                      <p className="text-white/50 text-sm mb-1">Comissão Vendedor</p>
-                      {sale.commission_seller !== null && sale.commission_seller !== undefined ? (
-                        <p className="text-2xl font-bold text-green-400 font-mono">
-                          {formatCurrency(sale.commission_seller)}
-                        </p>
-                      ) : (
-                        <p className="text-white/30">Não definida</p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-white/50 text-sm mb-1">Comissão Parceiro</p>
+                      <p className="text-white/50 text-sm mb-1">Comissão Operadora</p>
                       {sale.commission_partner !== null && sale.commission_partner !== undefined ? (
                         <p className="text-2xl font-bold text-green-400 font-mono">
                           {formatCurrency(sale.commission_partner)}
@@ -501,12 +505,14 @@ export default function SaleDetail({ editMode = false }) {
                         <p className="text-white/30">Não definida</p>
                       )}
                     </div>
-                    <div className="pt-2 border-t border-white/10">
-                      <p className="text-white/50 text-sm mb-1">Comissão Total</p>
-                      <p className="text-xl font-bold text-[#c8f31d] font-mono">
-                        {formatCurrency((sale.commission_seller || 0) + (sale.commission_partner || 0))}
-                      </p>
-                    </div>
+                    {sale.seller_id && (
+                      <div className="pt-2 border-t border-white/10">
+                        <p className="text-white/50 text-sm mb-1">Comissão Total</p>
+                        <p className="text-xl font-bold text-[#c8f31d] font-mono">
+                          {formatCurrency((sale.commission_seller || 0) + (sale.commission_partner || 0))}
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
               </>
