@@ -68,7 +68,8 @@ export default function Operators() {
   const [formData, setFormData] = useState({
     name: "",
     categories: [],
-    commission_visible_to_bo: false
+    commission_visible_to_bo: false,
+    allowed_sale_types: ['nova_instalacao', 'refid', 'mudanca_casa']
   });
 
   useEffect(() => {
@@ -91,7 +92,8 @@ export default function Operators() {
     setFormData({
       name: "",
       categories: [],
-      commission_visible_to_bo: false
+      commission_visible_to_bo: false,
+      allowed_sale_types: ['nova_instalacao', 'refid', 'mudanca_casa']
     });
     setModalOpen(true);
   };
@@ -101,7 +103,8 @@ export default function Operators() {
     setFormData({
       name: operator.name || "",
       categories: operator.categories || [],
-      commission_visible_to_bo: operator.commission_visible_to_bo || false
+      commission_visible_to_bo: operator.commission_visible_to_bo || false,
+      allowed_sale_types: operator.allowed_sale_types || ['nova_instalacao', 'refid', 'mudanca_casa']
     });
     setModalOpen(true);
   };
@@ -112,6 +115,15 @@ export default function Operators() {
       categories: prev.categories.includes(category)
         ? prev.categories.filter(c => c !== category)
         : [...prev.categories, category]
+    }));
+  };
+
+  const handleSaleTypeToggle = (saleType) => {
+    setFormData(prev => ({
+      ...prev,
+      allowed_sale_types: prev.allowed_sale_types.includes(saleType)
+        ? prev.allowed_sale_types.filter(st => st !== saleType)
+        : [...prev.allowed_sale_types, saleType]
     }));
   };
 
@@ -347,6 +359,48 @@ export default function Operators() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            <div>
+              <Label className="form-label mb-3">Tipos de Venda Permitidos *</Label>
+              <div className="space-y-2">
+                <div
+                  className="flex items-center space-x-2 p-3 rounded-lg bg-[#0d474f] hover:bg-[#0d474f]/80 cursor-pointer"
+                  onClick={() => handleSaleTypeToggle('nova_instalacao')}
+                >
+                  <Checkbox
+                    checked={formData.allowed_sale_types.includes('nova_instalacao')}
+                    onCheckedChange={() => handleSaleTypeToggle('nova_instalacao')}
+                  />
+                  <Label className="text-white text-sm cursor-pointer flex-1">
+                    Nova Instalação (NI)
+                  </Label>
+                </div>
+                <div
+                  className="flex items-center space-x-2 p-3 rounded-lg bg-[#0d474f] hover:bg-[#0d474f]/80 cursor-pointer"
+                  onClick={() => handleSaleTypeToggle('refid')}
+                >
+                  <Checkbox
+                    checked={formData.allowed_sale_types.includes('refid')}
+                    onCheckedChange={() => handleSaleTypeToggle('refid')}
+                  />
+                  <Label className="text-white text-sm cursor-pointer flex-1">
+                    Refid (Renovação)
+                  </Label>
+                </div>
+                <div
+                  className="flex items-center space-x-2 p-3 rounded-lg bg-[#0d474f] hover:bg-[#0d474f]/80 cursor-pointer"
+                  onClick={() => handleSaleTypeToggle('mudanca_casa')}
+                >
+                  <Checkbox
+                    checked={formData.allowed_sale_types.includes('mudanca_casa')}
+                    onCheckedChange={() => handleSaleTypeToggle('mudanca_casa')}
+                  />
+                  <Label className="text-white text-sm cursor-pointer flex-1">
+                    Mudança de Casa (MC)
+                  </Label>
+                </div>
               </div>
             </div>
 

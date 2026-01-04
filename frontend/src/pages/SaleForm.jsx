@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,8 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Loader2, User, FileText, Zap } from "lucide-react";
+import { ArrowLeft, Save, Loader2, User, FileText, Zap, Phone as PhoneIcon } from "lucide-react";
 
 const CATEGORIES = [
   { value: "energia", label: "Energia" },
@@ -27,8 +38,9 @@ const CATEGORIES = [
 ];
 
 const SALE_TYPES = [
-  { value: "nova_instalacao", label: "Nova Instalação" },
-  { value: "refid", label: "Refid (Renovação)" }
+  { value: "nova_instalacao", label: "Nova Instalação (NI)" },
+  { value: "refid", label: "Refid (Renovação)" },
+  { value: "mudanca_casa", label: "Mudança de Casa (MC)" }
 ];
 
 const ENERGY_TYPES = [
@@ -64,6 +76,8 @@ export default function SaleForm() {
   const [loadingPartners, setLoadingPartners] = useState(true);
   const [loadingOperators, setLoadingOperators] = useState(false);
   const [loadingRefidData, setLoadingRefidData] = useState(false);
+  const [originalAddress, setOriginalAddress] = useState(null);
+  const [showAddressChangeDialog, setShowAddressChangeDialog] = useState(false);
 
   const [formData, setFormData] = useState({
     client_name: "",
@@ -85,7 +99,11 @@ export default function SaleForm() {
     cpe: "",
     potencia: "",
     cui: "",
-    escalao: ""
+    escalao: "",
+    services_tv: false,
+    services_net: false,
+    services_lr: false,
+    services_moveis_count: 0
   });
 
   useEffect(() => {
@@ -190,17 +208,32 @@ export default function SaleForm() {
     setLoadingRefidData(true);
     try {
       const originalSale = await salesService.getSaleById(saleId);
+
+      const addressData = {
+        street_address: originalSale.street_address || "",
+        postal_code: originalSale.postal_code || "",
+        city: originalSale.city || ""
+      };
+
+      setOriginalAddress(addressData);
+
       setFormData(prev => ({
         ...prev,
         client_name: originalSale.client_name || "",
         client_email: originalSale.client_email || "",
         client_phone: originalSale.client_phone || "",
-        client_address: originalSale.client_address || "",
         client_nif: originalSale.client_nif || "",
+        ...addressData,
         category: originalSale.category || "",
         sale_type: "refid",
         partner_id: originalSale.partner_id || "",
+        operator_id: originalSale.operator_id || "",
         loyalty_months: originalSale.loyalty_months?.toString() || "",
+        energy_type: originalSale.energy_type || "",
+        cpe: originalSale.cpe || "",
+        potencia: originalSale.potencia || "",
+        cui: originalSale.cui || "",
+        escalao: originalSale.escalao || ""
       }));
       toast.success("Dados carregados para venda Refid");
     } catch (error) {
@@ -215,9 +248,29 @@ export default function SaleForm() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const checkAddressChange = () => {
+    if (!originalAddress) return false;
+
+    return (
+      formData.street_address !== originalAddress.street_address ||
+      formData.postal_code !== originalAddress.postal_code ||
+      formData.city !== originalAddress.city
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check if address changed and sale type is still refid
+    if (formData.sale_type === "refid" && originalAddress && checkAddressChange()) {
+      setShowAddressChangeDialog(true);
+      return;
+    }
+
+    await submitSale();
+  };
+
+  const submitSale = async () => {
     // Validation
     if (!formData.client_name || !formData.category || !formData.partner_id) {
       toast.error("Preencha os campos obrigatórios (Nome, Categoria, Parceiro)");
@@ -260,12 +313,12 @@ export default function SaleForm() {
         toast.error("Selecione o tipo de energia");
         return;
       }
-      
+
       if ((formData.energy_type === "eletricidade" || formData.energy_type === "dual") && (!formData.cpe || !formData.potencia)) {
         toast.error("CPE e Potência são obrigatórios para eletricidade");
         return;
       }
-      
+
       if ((formData.energy_type === "gas" || formData.energy_type === "dual") && (!formData.cui || !formData.escalao)) {
         toast.error("CUI e Escalão são obrigatórios para gás");
         return;
@@ -286,7 +339,11 @@ export default function SaleForm() {
         cpe: formData.cpe || null,
         potencia: formData.potencia || null,
         cui: formData.cui || null,
-        escalao: formData.escalao || null
+        escalao: formData.escalao || null,
+        services_tv: formData.services_tv,
+        services_net: formData.services_net,
+        services_lr: formData.services_lr,
+        services_moveis_count: parseInt(formData.services_moveis_count) || 0
       };
 
       await salesService.createSale(payload);
@@ -723,6 +780,72 @@ export default function SaleForm() {
           </Card>
         )}
 
+        {/* Services - only for telecomunicacoes NI and MC */}
+        {formData.category === "telecomunicacoes" && (formData.sale_type === "nova_instalacao" || formData.sale_type === "mudanca_casa") && (
+          <Card className="card-leiritrix mt-6">
+            <CardHeader className="border-b border-white/5 pb-4">
+              <CardTitle className="text-white font-['Manrope'] text-lg flex items-center gap-2">
+                <PhoneIcon size={20} className="text-[#c8f31d]" />
+                Serviços a Ativar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="services_tv"
+                    checked={formData.services_tv}
+                    onCheckedChange={(checked) => handleChange("services_tv", checked)}
+                    className="border-white/20"
+                    data-testid="services-tv-checkbox"
+                  />
+                  <Label htmlFor="services_tv" className="form-label cursor-pointer">TV</Label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="services_net"
+                    checked={formData.services_net}
+                    onCheckedChange={(checked) => handleChange("services_net", checked)}
+                    className="border-white/20"
+                    data-testid="services-net-checkbox"
+                  />
+                  <Label htmlFor="services_net" className="form-label cursor-pointer">NET (Internet)</Label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="services_lr"
+                    checked={formData.services_lr}
+                    onCheckedChange={(checked) => handleChange("services_lr", checked)}
+                    className="border-white/20"
+                    data-testid="services-lr-checkbox"
+                  />
+                  <Label htmlFor="services_lr" className="form-label cursor-pointer">LR (Linha Rede)</Label>
+                </div>
+
+                <div>
+                  <Label htmlFor="services_moveis_count" className="form-label">Móveis (máximo 5)</Label>
+                  <Input
+                    id="services_moveis_count"
+                    type="number"
+                    min="0"
+                    max="5"
+                    value={formData.services_moveis_count}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 0;
+                      handleChange("services_moveis_count", Math.min(5, Math.max(0, val)));
+                    }}
+                    className="form-input"
+                    placeholder="0"
+                    data-testid="services-moveis-input"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Notes */}
         <Card className="card-leiritrix mt-6">
           <CardContent className="pt-6">
@@ -769,6 +892,45 @@ export default function SaleForm() {
           </Button>
         </div>
       </form>
+
+      {/* Address Change Dialog */}
+      <AlertDialog open={showAddressChangeDialog} onOpenChange={setShowAddressChangeDialog}>
+        <AlertDialogContent className="bg-[#082d32] border-[#c8f31d]/30">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Mudança de Morada Detectada</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              A morada foi alterada em relação à venda original. Este contrato é:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="bg-white/10 text-white hover:bg-white/20"
+              onClick={() => setShowAddressChangeDialog(false)}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-blue-600 text-white hover:bg-blue-700"
+              onClick={() => {
+                setShowAddressChangeDialog(false);
+                submitSale();
+              }}
+            >
+              Renovação (Refid) na mesma morada
+            </AlertDialogAction>
+            <AlertDialogAction
+              className="bg-[#c8f31d] text-[#0d474f] hover:bg-[#d4ff3d]"
+              onClick={() => {
+                handleChange("sale_type", "mudanca_casa");
+                setShowAddressChangeDialog(false);
+                setTimeout(() => submitSale(), 100);
+              }}
+            >
+              Mudança de Casa (MC)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
